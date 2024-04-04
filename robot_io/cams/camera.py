@@ -160,7 +160,7 @@ class Camera:
 
     def get_extrinsic_calibration(self, robot_name):
         calib_folder = get_git_root(__file__) / "robot_io/calibration/calibration_files"
-        cam_name_serial = f"{self.name}_{self.serial_number}" #if hasattr(self, "serial_number") else self.name
+        cam_name_serial = f"{self.name}_{self.serial_number}" if hasattr(self, "serial_number") else self.name
         # get the latest calibration file give that the date is appended to the file name so we should reverse order
         calib_files = list(calib_folder.glob(f"{robot_name}_{cam_name_serial}_*.npy"))
         if len(calib_files) == 0:

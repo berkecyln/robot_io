@@ -204,7 +204,12 @@ def main(cfg):
     if len(list_recording_dirs) == 1:
         recording_dirs = list_recording_dirs
     else:
-        recording_dirs = [item for sublist in list_recording_dirs for item in sublist]
+        # TODO: Write a function to address this automatically
+        # Use this line if the data is collected over multiple days
+        # recording_dirs = [item for sublist in list_recording_dirs for item in sublist]
+        
+        # Use this line if the data is collected in a single day
+        recording_dirs = [item for item in list_recording_dirs]
     print("Found following subfolders containing recordings: ", recording_dirs)
     output_dir = Path(output_dir)
     if output_dir.exists():
