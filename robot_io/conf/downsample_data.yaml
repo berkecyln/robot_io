@@ -1,0 +1,5 @@
+dataset_root: /export/home/lagandua/playdata-post/processed/
+output_dir: /export/home/lagandua/playdata-post/down/
+repeat_info: false # If true, sample 2 episodes of 15hz, from a single episode saved at 30 hz
+high_memory_mode: false # It reads the files only once, it works faster but it requires a high memory usage
+cam_num: 1 # Number of static cameras

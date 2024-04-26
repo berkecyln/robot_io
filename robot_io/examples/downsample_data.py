@@ -6,42 +6,26 @@ from pathlib import Path
 import shutil
 
 import numpy as np
+import hydra
 from omegaconf import OmegaConf
 from tqdm import tqdm
 
 from robot_io.examples.preprocess_data import compute_rel_action
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Convert dataset to 15 hz (leave one step out).")
-    parser.add_argument("--dataset_root", help="The path of the source dataset dir.", type=str)
-    parser.add_argument("--output_dir", help="The path of the destination dataset dir.", type=str)
-    parser.add_argument(
-        "--repeat-info",
-        action="store_true",
-        help=(
-            "If true, sample 2 episodes of 15hz, from a single episode saved at 30 hz, "
-            "otherwise sample a single episode."
-        ),
-    )
-    parser.add_argument(
-        "--high-memory-mode",
-        action="store_true",
-        help="It reads the files only once, it works faster but it requires a high memory usage.",
-    )
-    args = parser.parse_args()
-
-    src_path = Path(args.dataset_root)
+@hydra.main(config_path="../conf", config_name="downsample_data")
+def main(cfg):
+    src_path = Path(cfg.dataset_root)
     assert src_path.is_dir(), "The path of the src dataset must be a dir"
 
-    dest_path = Path(args.output_dir)
+    dest_path = Path(cfg.output_dir)
     dest_path.mkdir(parents=True, exist_ok=True)
 
     # Iterate subdirs inside src dir
     old_to_new_ids = {}
     subdirs = [f for f in src_path.iterdir() if f.is_dir()]
     subdirs = ["."] if len(subdirs) == 0 else subdirs
-    offsets = [0, 1] if args.repeat_info else [0]
+    offsets = [0, 1] if cfg.repeat_info else [0]
     for subdir in subdirs:
         # Create dest dir
         (dest_path / subdir).mkdir(parents=True, exist_ok=True)
@@ -56,7 +40,7 @@ def main():
                 new_start = new_i
                 for old_i in tqdm(range(start + 1 + offset, end, 2)):
                     if old_i + 1 <= end:
-                        if not args.high_memory_mode:
+                        if not cfg.high_memory_mode:
                             episode_frames = {}
                         # Load following frames if they have not been loaded
                         if old_i - 1 not in episode_frames:
