@@ -10,7 +10,7 @@ import pyrealsense2 as rs
 from omegaconf import OmegaConf
 
 from robot_io.cams.camera import Camera
-
+import cv2
 
 class Realsense(Camera):
     """
@@ -24,7 +24,8 @@ class Realsense(Camera):
                  resize_resolution=None,
                  crop_coords=None,
                  params=None,
-                 name=None,):
+                 name=None,
+                 flipped_cam=False):
         assert img_type in ['rgb', "rgb_depth"]
         self.img_type = img_type
         super().__init__(resolution=resolution, crop_coords=crop_coords, resize_resolution=resize_resolution, name=name)
@@ -64,6 +65,8 @@ class Realsense(Camera):
         # The "align_to" is the stream type to which we plan to align depth frames.
         align_to = rs.stream.color
         self.align = rs.align(align_to)
+        
+        self.flipped_cam = flipped_cam
 
     def __del__(self):
         # Stop streaming
@@ -85,6 +88,9 @@ class Realsense(Camera):
 
         color_frame = aligned_frames.get_color_frame()
         color_image = np.asanyarray(color_frame.get_data())
+        # Flip image vertically if needed
+        if self.flipped_cam:
+            color_image = cv2.flip(color_image, -1)
         if self.img_type == 'rgb':
             return color_image, None
         depth_frame = aligned_frames.get_depth_frame()
@@ -93,6 +99,9 @@ class Realsense(Camera):
         depth_image = np.asanyarray(depth_frame.get_data())
         depth_image = depth_image.astype(np.float32)
         depth_image *= self.depth_scale
+        # Flip image vertically if needed
+        if self.flipped_cam:
+            depth_image = cv2.flip(depth_image, -1)
         return color_image, depth_image
 
     def set_parameters(self, params):
@@ -129,7 +138,8 @@ class Realsense(Camera):
 def test_cam():
     # Import OpenCV for easy image rendering
     import cv2
-    cam_cfg = OmegaConf.load("../../conf/cams/gripper_cam/framos_highres.yaml")
+    cam_cfg = OmegaConf.load("/export/home/lagandua/robot_io_dev/robot_io/conf/cams/gripper_cam/framos_highres.yaml")
+    # cam_cfg = OmegaConf.load("../../conf/cams/gripper_cam/realsense_d435.yaml")
     cam = hydra.utils.instantiate(cam_cfg)
 
     rgb, depth = cam.get_image()

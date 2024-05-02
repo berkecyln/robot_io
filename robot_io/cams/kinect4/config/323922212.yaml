@@ -18,8 +18,8 @@
   crop_coords:
     - 30
     - 665
-    - 365
-    - 1000
+    - 340
+    - 975
 
 1080p: #copilot filled
   intrinsics:
