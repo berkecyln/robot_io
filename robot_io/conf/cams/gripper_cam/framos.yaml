@@ -5,7 +5,7 @@ fps: 30
 img_type: "rgb_depth"
 resolution: [640, 480]
 resize_resolution: [200, 200]
-crop_coords: [0, 480, 80, 560]
+crop_coords: [0, 480, 100, 580] #[y1, y2, x1, x2]
 params:
   brightness: 3.0
   contrast: 50.0
@@ -19,3 +19,12 @@ params:
   enable_auto_exposure: 1.0
   enable_auto_white_balance: 1.0
 flipped_cam: true
+
+########
+#  (x1, y1)-----------------------
+#  |                              |
+#  |                              |
+#  |                              |
+#  |                              |
+#  -------------------------(x2, y2)
+########

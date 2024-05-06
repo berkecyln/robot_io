@@ -3,6 +3,6 @@ resolution: [200, 200]
 
 defaults:
   - cams/static_cam@cam: kinect4
-#  - cams/gripper_cam@cam: framos_highres
+  # - cams/gripper_cam@cam: framos_highres
   - override hydra/job_logging: colorlog
   - override hydra/hydra_logging: colorlog

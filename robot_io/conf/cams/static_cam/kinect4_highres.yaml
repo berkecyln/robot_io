@@ -5,5 +5,14 @@ align_depth_to_color: true
 resolution: '1080p'
 undistort_image: true
 resize_resolution: [200, 200]
-crop_coords: [301, 623, 516, 946]
+crop_coords: null #[y1, y2, x1, x2]
 fps: 30
+
+########
+#  (x1, y1)-----------------------
+#  |                              |
+#  |                              |
+#  |                              |
+#  |                              |
+#  -------------------------(x2, y2)
+########
