@@ -84,7 +84,7 @@ class VrRecorder:
             if self.recording:
                 self.recording = False
             self.delete_last_episode()
-        if self.recording:
+        if self.recording and record_info["dead_man_switch_down"]:
             assert action is not None
             self.save(action, obs, False)
 
