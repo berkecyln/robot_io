@@ -5,7 +5,7 @@ fps: 30
 img_type: "rgb_depth"
 resolution: [640, 480]
 resize_resolution: [200, 200]
-crop_coords: [0, 480, 100, 580] #[y1, y2, x1, x2]
+crop_coords: [0, 480, 110, 590] #[y1, y2, x1, x2]
 params:
   brightness: 3.0
   contrast: 50.0

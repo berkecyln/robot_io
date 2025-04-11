@@ -133,7 +133,7 @@ def visualize_tcp_poses(robot, cam, T_cam_object,  tcp_poses):
         visualize_frame_in_static_cam(cam, T_cam_object, tcp_poses[i], wait = False)  #target_pos
 
 
-@hydra.main(config_path="../conf")
+@hydra.main(config_path="../conf", config_name="panda_calibrate_static_cam")
 def main(cfg):
     """
     Calibrate the static camera by attaching a marker to the end-effector and recording marker poses with VR control.

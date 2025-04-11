@@ -1,0 +1,4 @@
+dataset_root: /export/home/lagandua/playdata-oct-down/
+obs_keys: [] #["rgb_static", "rgb_gripper"]
+act_keys: ["rel_actions_world", "rel_actions_gripper"]
+target_name: "statistics"
