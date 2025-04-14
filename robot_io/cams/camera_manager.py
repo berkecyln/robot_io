@@ -166,6 +166,32 @@ class CameraManager:
                 cv2.imshow("rgb_static", upscale(self.obs["rgb_static"][:, :, ::-1]))
         
         cv2.waitKey(1)
+    
+    def render_numpy(self, camera_name):
+        if camera_name == "rgb_gripper":
+            if "rgb_gripper" in self.obs:
+                render = self.obs["rgb_gripper"]
+            else:
+                render = None
+        elif camera_name == "depth_gripper":
+            if "depth_gripper" in self.obs:
+                render = self.normalize_depth(self.obs["depth_gripper"])
+                render = cv2.applyColorMap(render, cv2.COLORMAP_JET)
+            else:
+                render = None
+        elif camera_name == "rgb_static":        
+            if self.static_cam is not None:
+                if self.static_cam_count > 1:
+                    render = []
+                    for cam_i, cam in enumerate(self.static_cam):
+                        render.append(self.obs[f"rgb_static_{cam_i}"])
+                    render = tuple(render)
+                else:
+                    render = self.obs["rgb_static"]
+                    # Resize tp 64x64
+                    # render = cv2.resize(render, (64, 64), interpolation=cv2.INTER_AREA)
+                    
+        return render
         
 
 @hydra.main(config_path="../conf/cams", config_name="camera_manager.yaml")

@@ -4,7 +4,12 @@ import gym
 import hydra
 import numpy as np
 from robot_io.input_devices.keyboard_input import keyboard_control
-from robot_io.utils.utils import FpsController, restrict_workspace, timeit
+from robot_io.utils.utils import (
+    FpsController,
+    restrict_workspace,
+    timeit,
+    quat_to_euler,
+)
 
 
 class RobotEnv(gym.Env):
@@ -72,7 +77,16 @@ class RobotEnv(gym.Env):
             Dictionary with image obs and state obs
         """
         obs = self.camera_manager.get_images()
-        obs["robot_state"] = self.robot.get_state()
+        robot_state = self.robot.get_state()
+        obs["robot_obs"] = np.concatenate(
+            [
+                robot_state["tcp_pos"],
+                quat_to_euler(robot_state["tcp_orn"]),
+                [robot_state["gripper_opening_width"]],
+                robot_state["joint_positions"],
+                [int(robot_state["gripper_opening_width"] >= 0.078)],
+            ]
+        )
         return obs
 
     def get_reward(self, obs, action):
@@ -137,13 +151,15 @@ class RobotEnv(gym.Env):
 
         return obs, reward, termination, info
 
-    def render(self, mode="human"):
+    def render(self, cam="rgb_static", mode="human"):
         """
         Renders the environment.
         If mode is:
 
         - human: render to the current display or terminal and
           return nothing. Usually for human consumption.
+
+        - rgb_array: a numpy array (H, W, 3) representing the RGB image
 
         Args:
             mode (str): the mode to render with
@@ -152,3 +168,6 @@ class RobotEnv(gym.Env):
             self.camera_manager.render()
             self.robot.visualize_joint_states()
             self.robot.visualize_external_forces()
+        elif mode == "rgb_array":
+            return self.camera_manager.render_numpy(camera_name=cam)
+        
