@@ -1,16 +1,36 @@
-import argparse
 from copy import deepcopy
 import json
 import os
 from pathlib import Path
 import shutil
-
 import numpy as np
 import hydra
 from omegaconf import OmegaConf
 from tqdm import tqdm
+from robot_io.utils.utils import to_relative_all_frames
 
-from robot_io.examples.preprocess_data import compute_rel_action
+MAX_REL_POS = 0.08
+MAX_REL_ORN = 0.20
+
+# Copied from robot_io/examples/preprocess_data.py
+def compute_rel_action(tcp_pos, tcp_orn, next_tcp_pos, next_tcp_orn, gripper_action):
+    rel_pos_orn_dct = to_relative_all_frames(
+        tcp_pos, tcp_orn, next_tcp_pos, next_tcp_orn
+    )
+    rel_pos_orn_dct_new = {}
+    for frame, (rel_pos, rel_orn) in rel_pos_orn_dct.items():
+        # clipped_rel_pos = np.clip(rel_pos, -MAX_REL_POS, MAX_REL_POS) / MAX_REL_POS
+        # clipped_rel_orn = np.clip(rel_orn, -MAX_REL_ORN, MAX_REL_ORN) / MAX_REL_ORN
+        clipped_rel_pos, clipped_rel_orn = rel_pos / MAX_REL_POS, rel_orn / MAX_REL_ORN
+        if clipped_rel_pos[0] > 1 or clipped_rel_pos[1] > 1 or clipped_rel_pos[2] > 1:
+            print("clipped_rel_pos: ", clipped_rel_pos)
+        if clipped_rel_orn[0] > 1 or clipped_rel_orn[1] > 1 or clipped_rel_orn[2] > 1:
+            print("clipped_rel_orn: ", clipped_rel_orn)
+        rel_action = np.concatenate(
+            [clipped_rel_pos, clipped_rel_orn, [gripper_action]]
+        )
+        rel_pos_orn_dct_new[frame] = rel_action
+    return rel_pos_orn_dct_new
 
 
 @hydra.main(config_path="../conf", config_name="downsample_data")
@@ -38,30 +58,30 @@ def main(cfg):
             episode_frames = {}
             for offset in offsets:
                 new_start = new_i
-                for old_i in tqdm(range(start + 1 + offset, end, 2)):
-                    if old_i + 1 <= end:
+                for old_i in tqdm(range(start + 2 + offset, end, 4)):
+                    if old_i + 2 <= end:
                         if not cfg.high_memory_mode:
                             episode_frames = {}
                         # Load following frames if they have not been loaded
-                        if old_i - 1 not in episode_frames:
-                            aux_data = np.load(src_path / subdir / f"episode_{old_i - 1:06d}.npz", allow_pickle=True)
-                            episode_frames[old_i - 1] = dict(aux_data)
+                        if old_i - 2 not in episode_frames:
+                            aux_data = np.load(src_path / subdir / f"episode_{old_i - 2:06d}.npz", allow_pickle=True)
+                            episode_frames[old_i - 2] = dict(aux_data)
                         if old_i not in episode_frames:
                             aux_data = np.load(src_path / subdir / f"episode_{old_i:06d}.npz", allow_pickle=True)
                             episode_frames[old_i] = dict(aux_data)
-                        if old_i + 1 not in episode_frames:
-                            aux_data = np.load(src_path / subdir / f"episode_{old_i + 1:06d}.npz", allow_pickle=True)
-                            episode_frames[old_i + 1] = dict(aux_data)
+                        if old_i + 2 not in episode_frames:
+                            aux_data = np.load(src_path / subdir / f"episode_{old_i + 2:06d}.npz", allow_pickle=True)
+                            episode_frames[old_i + 2] = dict(aux_data)
 
                         # Get rel_action from current_state -> current_state + 2
                         data = deepcopy(episode_frames[old_i])
-                        data["actions"] = episode_frames[old_i + 1]["actions"]
+                        data["actions"] = episode_frames[old_i + 2]["actions"]
                         rel_actions = compute_rel_action(
-                            tcp_pos=episode_frames[old_i - 1]["actions"][:3],
-                            tcp_orn=episode_frames[old_i - 1]["actions"][3:6],
-                            next_tcp_pos=episode_frames[old_i + 1]["actions"][:3],
-                            next_tcp_orn=episode_frames[old_i + 1]["actions"][3:6],
-                            gripper_action=episode_frames[old_i + 1]["actions"][-1],
+                            tcp_pos=episode_frames[old_i - 2]["actions"][:3],
+                            tcp_orn=episode_frames[old_i - 2]["actions"][3:6],
+                            next_tcp_pos=episode_frames[old_i + 2]["actions"][:3],
+                            next_tcp_orn=episode_frames[old_i + 2]["actions"][3:6],
+                            gripper_action=episode_frames[old_i + 2]["actions"][-1],
                         )
                         data["rel_actions_world"] = rel_actions["world_frame"]
                         data["rel_actions_gripper"] = rel_actions["gripper_frame"]

@@ -16,4 +16,5 @@ load_dir: ???
 use_rel_actions: true
 
 env:
-  freq: 15
+  freq: 5
+  show_fps: true

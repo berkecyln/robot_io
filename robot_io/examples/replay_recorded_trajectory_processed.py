@@ -31,51 +31,20 @@ def reset(env, path, i):
 
 def get_action(path, i, use_rel_actions=False, control_frame="tcp"):
     frame = get_frame(path, i)
-    if control_frame == "tcp":
-        action = frame["rel_actions_gripper"]
-    else:
-        action = frame["rel_actions_world"]
-    print(action)
-    pos = action[:3] * MAX_REL_POS
-    orn = action[3:6] * MAX_REL_ORN
-
-    new_action = {"motion": (pos, orn, action[-1]), "ref": "rel"}
-    return new_action
-    # if use_rel_actions:
-    #     prev_action = get_frame(path, i - 1)['rel_action'].item()
-    #     return to_relative_action_dict(prev_action, action)
-    # else:
-    #     return action
-
-
-def to_relative_action_dict(pos, next_pos, gripper_action):
-    pos = pos[:3]
-    orn = next_pos[3:6]
-
-    next_pos = next_pos[:3] * MAX_REL_POS
-    next_orn = next_pos[3:6] * MAX_REL_ORN
-    rel_pos, rel_orn = to_relative(pos, orn, next_pos, next_orn)
-    action = {"motion": (rel_pos, rel_orn, gripper_action), "ref": "rel"}
-    return action
-
-
-def get_action_pos(path, i, use_rel_actions=False, control_frame="tcp"):
-    frame = get_frame(path, i)
-    robot_obs = frame["robot_obs"].item()
     if use_rel_actions:
-        next_obs = get_frame(path, i + 1)["robot_obs"].item()
-        gripper_action = robot_obs[-1]
-        return to_relative_action_dict(robot_obs, next_obs, gripper_action)
-    else:
         if control_frame == "tcp":
             action = frame["rel_actions_gripper"]
         else:
             action = frame["rel_actions_world"]
+        print(action)
         pos = action[:3] * MAX_REL_POS
         orn = action[3:6] * MAX_REL_ORN
-        new_action = {"motion": (pos, orn, action[-1]), "ref": "rel"}
-        return new_action
 
+        new_action = {"motion": (pos, orn, action[-1]), "ref": "rel"}
+    else:
+        action = frame["actions"]
+        new_action = {"motion": (action[:3], action[3:6], action[-1]), "ref": "abs"}
+    return new_action
 
 @hydra.main(config_path="../conf", config_name="replay_recorded_trajectory")
 def main(cfg):
@@ -92,14 +61,13 @@ def main(cfg):
     ep_start_end_ids = get_ep_start_end_ids(cfg.load_dir)
 
     env.reset()
-    for start_idx, end_idx in ep_start_end_ids:
+    for idx, (start_idx, end_idx) in enumerate(ep_start_end_ids):
         reset(env, cfg.load_dir, start_idx)
         for i in range(start_idx + 1, end_idx + 1):
             action = get_action(cfg.load_dir, i, use_rel_actions,
                                 cfg.robot.rel_action_params.relative_action_control_frame)
             obs, _, _, _ = env.step(action)
             env.render()
-        break
 
 
 if __name__ == "__main__":
