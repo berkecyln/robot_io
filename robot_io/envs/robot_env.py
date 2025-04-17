@@ -88,6 +88,43 @@ class RobotEnv(gym.Env):
             ]
         )
         return obs
+    
+    def _get_depth_obs(self):
+        """
+        Get depth observation.
+        Returns:
+            Dictionary with depth obs
+        """
+        depth_obs = self.camera_manager.get_depth_images()
+        return depth_obs
+
+    def _get_rgb_obs(self):
+        """
+        Get RGB observation.
+        Returns:
+            Dictionary with RGB obs
+        """
+        rgb_obs = self.camera_manager.get_rgb_images()
+        return rgb_obs
+
+    def _get_state_obs(self):
+        """
+        Get state observation.
+        Returns:
+            Dictionary with state obs with key 'robot_obs'
+        """
+        robot_state = self.robot.get_state()
+        obs = {}
+        obs["robot_obs"] = np.concatenate(
+            [
+                robot_state["tcp_pos"],
+                quat_to_euler(robot_state["tcp_orn"]),
+                [robot_state["gripper_opening_width"]],
+                robot_state["joint_positions"],
+                [int(robot_state["gripper_opening_width"] >= 0.078)],
+            ]
+        )
+        return obs
 
     def get_reward(self, obs, action):
         return 0

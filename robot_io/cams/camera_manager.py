@@ -77,40 +77,56 @@ class CameraManager:
             obs['rgb_gripper'] = rgb_gripper
             obs['depth_gripper'] = depth_gripper
         if self.static_cam is not None:
-        
             if self.static_cam_count > 1:
                 rgb = tuple()
                 depth = tuple()
-                #for cam in self.static_cam:
-                #    rgb_cam, depth_cam = cam.get_image()
-                #    rgb += (rgb_cam,)
-                #    depth += (depth_cam,)
-                
-                # if self.threaded_cameras:
-                #     print("cam: ", self.static_cam[0]._camera_thread.camera.serial_number)
-                # else:
-                #     print("cam: ", self.static_cam[0].serial_number)
-
                 obs[f'rgb_static'] = rgb
                 obs[f'depth_static'] = depth
                 for cam_i, cam in enumerate(self.static_cam):
                     obs[f'rgb_static_{cam_i}'] = cam.get_image()[0]
                     obs[f'depth_static_{cam_i}'] = cam.get_image()[1]
-
-                # get the norm l1 distance between the first and the second camera in rgb_static
-                # l1_distance  = np.mean(np.linalg.norm(obs[f'rgb_static'][0] - obs[f'rgb_static'][1], axis = -1))
-
-                # print(f"l1 distance between rgb_static_0 and rgb_static_1 is {l1_distance}")
-
-                #assert l1_distance > 30, f"l1 distance between rgb_static_0 and rgb_static_1 is {l1_distance}"
-
-
             else:
                 rgb, depth = self.static_cam.get_image()
                 obs[f'rgb_static'] = rgb
                 obs[f'depth_static'] = depth
 
 
+        self.obs = obs
+        return obs
+
+    def get_rgb_images(self):
+        obs = {}
+        if self.gripper_cam is not None:
+            rgb_gripper = self.gripper_cam.get_image()[0]
+            obs['rgb_gripper'] = rgb_gripper
+        if self.static_cam is not None:
+            if self.static_cam_count > 1:
+                rgb = tuple()
+                for cam in self.static_cam:
+                    rgb_cam = cam.get_image()[0]
+                    rgb += (rgb_cam,)
+                obs[f'rgb_static'] = rgb
+            else:
+                rgb = self.static_cam.get_image()[0]
+                obs[f'rgb_static'] = rgb
+        self.obs = obs
+        return obs
+    
+    def get_depth_images(self):
+        obs = {}
+        if self.gripper_cam is not None:
+            depth_gripper = self.gripper_cam.get_image()[1]
+            obs['depth_gripper'] = depth_gripper
+        if self.static_cam is not None:
+            if self.static_cam_count > 1:
+                depth = tuple()
+                for cam in self.static_cam:
+                    depth_cam = cam.get_image()[1]
+                    depth += (depth_cam,)
+                obs[f'depth_static'] = depth
+            else:
+                depth = self.static_cam.get_image()[1]
+                obs[f'depth_static'] = depth
         self.obs = obs
         return obs
 
@@ -205,14 +221,3 @@ def main(cfg):
 
 if __name__ == "__main__":
     main()
-
-# if __name__ == "__main__":
-#     from omegaconf import OmegaConf
-#     hydra.initialize("../conf/cams")
-#     cfg = hydra.compose("camera_manager.yaml")
-#     print(cfg)
-#     cam_manager = hydra.utils.instantiate(cfg)
-#     while True:
-#         cam_manager.get_images()
-#         cam_manager.render()
-#         time.sleep(0.05)
