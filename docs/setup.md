@@ -1,3 +1,14 @@
+# Environment
+
+Because `robotio` combines older and newer repositories, some system requirements are not natively available on Ubuntu 24.04. This can lead to compatibility and compilation errors. To prevent this, we recommend creating a dedicated Conda environment to install all necessary tools cleanly.
+
+```
+# Create env with Python 3.8 and CMake 3.22
+conda create -n robotio python=3.8 cmake=3.22.1 numpy libfranka pybind11 eigen -c conda-forge -y
+conda activate robotio
+```
+Please ensure all installations are performed inside this active Conda environment to prevent permission or build errors.
+
 # Cameras
 
 ### Azure Kinect (Kinect 4)
@@ -21,7 +32,8 @@
 First follow installation instructions for librealsense2 [here](https://github.com/IntelRealSense/librealsense)
 ```
 pip install pyrealsense2
-python robot_io/cams/realsense/realsenseSR300_librs2.py  # to test
+# Make sure you are in robot_io project then run
+python robot_io/cams/realsense/realsense.py  # to test
 ```
 
 ### Framos D435e
@@ -58,24 +70,30 @@ pip install .
 For creating different IK solutions (e.g. in case of a different gripper) please refer to:
 `http://docs.ros.org/en/kinetic/api/framefab_irb6600_support/html/doc/ikfast_tutorial.html`
 
-### Frankx
-```
-git clone git@github.com:lukashermann/frankx
-cd frankx
-git clone git@github.com:pantor/affx
-git clone git@github.com:pantor/ruckig
-cd affx; git checkout -b frankx_version dabe0ba; cd ..
-cd ruckig; git checkout -b frankx_version 31f50f0; cd ..
+### Franky
 
-conda install pybind11
-vim setupy.py  # add "-DFranka_DIR=/opt/ros/noetic/share/franka/cmake/"
+To set up Franky, first ensure that you are using a real-time kernel and that the executing user has permission to use real-time priorities.
+
+To check if you have a real-time kernel, run the following in the terminal: `uname -a`
+
+If you see something like `Linux [PCNAME] ... PREEMPT_RT ...`, you have the real-time kernel already. You can then check if your user has permission to use this kernel via `ulimit -r`. If you see **99**, you have the correct permissions.
+
+If you do not see `PREEMPT_RT` or `99`, you need to set up the real-time kernel and user group. For detailed setup instructions, please see [Real-time Kernel Setup](realtime_kernel_setup.md).
+
+**Note:** Franky requires `eigen`, `libfranka`, and `pybind11`. If you followed the [Environment](#environment) setup at the start of this guide, these are already installed in your Conda environment.
+
+```
+# Clone with submodules included
+git clone --recurse-submodules https://github.com/TimSchneider42/franky.git
+cd franky
+
+# Link Conda libraries so the builder can find libfranka
+export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
+
+# Install in editable mode
 pip install -e .
-firefox https://192.168.180.87/desk/  # unlock joints
-export LD_LIBRARY_PATH=/opt/ros/noetic/lib/:$LD_LIBRARY_PATH
-
-cd robot_io/robot_interface
-python panda_frankx_interface.py  # test robot
 ```
+If you encounter with any issue please refer this [documentation](https://github.com/TimSchneider42/franky?tab=readme-ov-file#-%EF%B8%8F-setup).
 
 # Input Devices
 
