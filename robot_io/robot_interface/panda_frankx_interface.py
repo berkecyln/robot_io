@@ -6,10 +6,10 @@ import hydra.utils
 
 from robot_io.control.rel_action_control import RelActionControl
 from robot_io.robot_interface.base_robot_interface import BaseRobotInterface
-from frankx import Affine, JointMotion, LinearMotion, Robot, PathMotion, WaypointMotion, Waypoint, \
-    LinearRelativeMotion, StopMotion, ImpedanceMotion, JointWaypointMotion
-from frankx.gripper import Gripper
-from _frankx import NetworkException
+#from frankx import Affine, JointMotion, LinearMotion, Robot, PathMotion, WaypointMotion, Waypoint, \
+#    LinearRelativeMotion, StopMotion, ImpedanceMotion, JointWaypointMotion
+#from frankx.gripper import Gripper
+#from _frankx import NetworkException
 
 from robot_io.robot_io.utils.franky_utils import to_affine
 from robot_io.utils.utils import pos_orn_to_matrix, get_git_root, ReferenceType

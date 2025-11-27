@@ -1,4 +1,4 @@
-_target_: robot_io.ik.ik_frankx.IKFrankX
+_target_: robot_io.ik.ik_franky.IKFrankY
 _recursive_: false
 nullspace_joint_id: 2
 nullspace_joint_value: 1.4
