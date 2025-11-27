@@ -2,8 +2,9 @@
 
 Because `robotio` combines older and newer repositories, some system requirements are not natively available on Ubuntu 24.04. This can lead to compatibility and compilation errors. To prevent this, we recommend creating a dedicated Conda environment to install all necessary tools cleanly.
 
+Tested versions for environment: `python 3.8.20, cmake 3.22.1, numpy 1.24.4, libfranka 0.9.2, pybind11 3.0.1, eigen 3.4.0`
+
 ```
-# Create env with Python 3.8 and CMake 3.22
 conda create -n robotio python=3.8 cmake=3.22.1 numpy libfranka pybind11 eigen -c conda-forge -y
 conda activate robotio
 ```
@@ -59,6 +60,8 @@ python realsense.py  # test script
 
 ### IK fast
 IK fast is an analytic IK solver. In order to use IK fast, first install `ikfast-pybind`:
+
+Tested commit version: `b24db7b`
 ```
 git clone --recursive https://github.com/yijiangh/ikfast_pybind
 cd ikfast_pybind
@@ -81,6 +84,8 @@ If you see something like `Linux [PCNAME] ... PREEMPT_RT ...`, you have the real
 If you do not see `PREEMPT_RT` or `99`, you need to set up the real-time kernel and user group. For detailed setup instructions, please see [Real-time Kernel Setup](realtime_kernel_setup.md).
 
 **Note:** Franky requires `eigen`, `libfranka`, and `pybind11`. If you followed the [Environment](#environment) setup at the start of this guide, these are already installed in your Conda environment.
+
+Tested commit version: `614aaf75`, Tested kernel: `6.8.1-1015-realtime`
 
 ```
 # Clone with submodules included

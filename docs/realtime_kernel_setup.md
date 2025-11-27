@@ -2,9 +2,9 @@
 
 Franka robots require a strict 1kHz communication loop. To prevent `communication_constraints_violation` errors, you must install a Real-Time (`PREEMPT_RT`) kernel and configure user permissions.
 
-> **Note:** You need `sudo` privileges to complete this setup.
+**Note:** You need `sudo` privileges to complete this setup.
 
-> **Note for CUDA:** The real-time kernel is not compatible with standard NVIDIA drivers by default. If you want CUDA, please see the the [CUDA Setup Section](https://www.google.com/search?q=%233-cuda-setup-for-real-time-kernel) after finisihing with real-time kernel setup.
+**Note for CUDA:** The real-time kernel is not compatible with standard NVIDIA drivers by default. If you want CUDA, please see the the [CUDA Setup Section](https://www.google.com/search?q=%233-cuda-setup-for-real-time-kernel) after finisihing with real-time kernel setup.
 
 ## 1\. Install the Kernel
 
