@@ -6,20 +6,25 @@ import hydra.utils
 
 from robot_io.control.rel_action_control import RelActionControl
 from robot_io.robot_interface.base_robot_interface import BaseRobotInterface
-#from frankx import Affine, JointMotion, LinearMotion, Robot, PathMotion, WaypointMotion, Waypoint, \
-#    LinearRelativeMotion, StopMotion, ImpedanceMotion, JointWaypointMotion
-#from frankx.gripper import Gripper
-#from _frankx import NetworkException
+from franky import (
+    Robot, Gripper, Affine, RelativeDynamicsFactor, Duration,
+    JointMotion, JointWaypointMotion,
+    CartesianMotion, CartesianWaypointMotion, CartesianWaypoint,
+    CartesianImpedanceMotion, ExponentialImpedanceMotion,
+    NetworkException, ReferenceType as FrankyReferenceType
+)
 
 from robot_io.robot_io.utils.franky_utils import to_affine
 from robot_io.utils.utils import pos_orn_to_matrix, get_git_root, ReferenceType
 import logging
 log = logging.getLogger(__name__)
 
-# FrankX needs continuous Euler angles around TCP, as the trajectory generation works in the Euler space.
-# internally, FrankX expects orientations with the z-axis facing up, but to be consistent with other
-# robot interfaces we transform the TCP orientation such that the z-axis faces down.
-NE_T_EE = EE_T_NE = Affine(0, 0, 0, 0, 0, np.pi)
+# Franky uses continuous end-effector control in Cartesian space.
+# Transform TCP orientation so z-axis faces down for consistency with other robot interfaces.
+NE_T_EE = EE_T_NE = Affine(
+    translation=np.array([0.0, 0.0, 0.0]).reshape(3, 1),
+    quaternion=np.array([0.0, 1.0, 0.0, 0.0]).reshape(4, 1)  # 180° rotation around Y-axis
+)
 
 # align the output of force torque reading with the EE frame
 WRENCH_FRAME_CONV = np.diag([-1, 1, 1, -1, 1, 1])  # np.eye(6)
@@ -65,9 +70,9 @@ class PandaFrankXInterface(BaseRobotInterface):
         self.ul = ul
 
         # robot
-        self.robot = Robot(fci_ip, urdf_path=(get_git_root(__file__) / urdf_path).as_posix())
+        self.robot = Robot(fci_ip) # franky does not need urdf path
         self.robot.recover_from_errors()
-        self.robot.set_default_behavior()
+        #self.robot.set_default_behavior()
         self.libfranka_params = libfranka_params
         self.set_robot_params(libfranka_params, frankx_params)
 
@@ -81,11 +86,12 @@ class PandaFrankXInterface(BaseRobotInterface):
         self.motion_thread = None
         self.current_motion = None
 
-        self.gripper = Gripper(fci_ip, **gripper_params)
+        self.gripper = Gripper(fci_ip)
+        self.gripper_params = gripper_params
         self.open_gripper(blocking=True)
 
         # F_T_NE is the transformation from nominal end-effector (NE) frame to flange (F) frame.
-        F_T_NE = np.array(self.robot.read_once().F_T_NE).reshape((4, 4)).T
+        F_T_NE = self.robot.state.F_T_NE.matrix.T
         self.ik_solver = hydra.utils.instantiate(ik, F_T_NE=F_T_NE)
 
         self.reference_type = ReferenceType.ABSOLUTE
@@ -102,10 +108,12 @@ class PandaFrankXInterface(BaseRobotInterface):
                                           libfranka_params.collision_force_threshold)
         self.robot.set_joint_impedance(libfranka_params.franka_joint_impedance)
 
-        # params of frankx
-        self.robot.velocity_rel = frankx_params.velocity_rel
-        self.robot.acceleration_rel = frankx_params.acceleration_rel
-        self.robot.jerk_rel = frankx_params.jerk_rel
+        # params of franky
+        self.robot.relative_dynamics_factor = RelativeDynamicsFactor(
+            frankx_params.velocity_rel,
+            frankx_params.acceleration_rel,
+            frankx_params.jerk_rel
+        )
 
     def move_to_neutral(self):
         return self.move_joint_pos(self.neutral_pose)
@@ -142,7 +150,7 @@ class PandaFrankXInterface(BaseRobotInterface):
             log.warning("Impedance motion for cartesian LIN is currently not implemented. Not using impedance.")
         self.abort_motion()
         target_pose = to_affine(target_pos, target_orn) * NE_T_EE
-        self.current_motion = WaypointMotion([Waypoint(target_pose)])
+        self.current_motion = CartesianWaypointMotion([CartesianWaypoint(target_pose)])
         self.robot.move(self.current_motion)
 
     def move_async_cart_pos_abs_lin(self, target_pos, target_orn):
@@ -153,13 +161,12 @@ class PandaFrankXInterface(BaseRobotInterface):
             self._frankx_async_lin_motion(target_pos, target_orn)
 
     def move_async_joint_pos(self, joint_positions):
-        if self._is_active(JointWaypointMotion):
-            self.current_motion.set_next_target(joint_positions)
-        else:
-            if self.current_motion is not None:
-                self.abort_motion()
-            self.current_motion = JointWaypointMotion([joint_positions], return_when_finished=False)
-            self.motion_thread = self.robot.move_async(self.current_motion)
+        # franky doesn't have set_next_target()
+        # create new motion and call move with asynchronous=True
+        if self.current_motion is not None:
+            self.abort_motion()
+        self.current_motion = JointWaypointMotion([joint_positions], return_when_finished=False)
+        self.motion_thread = self.robot.move(self.current_motion, asynchronous=True)
 
     def move_joint_pos(self, joint_positions):
         self.reference_type = ReferenceType.JOINT
@@ -171,11 +178,11 @@ class PandaFrankXInterface(BaseRobotInterface):
 
     def abort_motion(self):
         if self.current_motion is not None:
-            self.current_motion.stop()
+            self.robot.stop()
             self.current_motion = None
         if self.motion_thread is not None:
         #     # self.motion_thread.stop()
-            self.motion_thread.join()
+            # no join needed for franky's async move   
             self.motion_thread = None
         while 1:
             try:
@@ -187,7 +194,7 @@ class PandaFrankXInterface(BaseRobotInterface):
 
     def get_state(self):
         if self.current_motion is None:
-            _state = self.robot.read_once()
+            _state = self.robot.state
         else:
             _state = self.current_motion.get_robot_state()
         pos, orn = self.get_tcp_pos_orn()
@@ -195,18 +202,18 @@ class PandaFrankXInterface(BaseRobotInterface):
         state = {"tcp_pos": pos,
                  "tcp_orn": orn,
                  "joint_positions": np.array(_state.q),
-                 "gripper_opening_width": self.gripper.width(),
+                 "gripper_opening_width": self.gripper.width,
                  "force_torque": WRENCH_FRAME_CONV @ np.array(_state.K_F_ext_hat_K),
                  "contact": np.array(_state.cartesian_contact)}
         return state
 
     def get_tcp_pos_orn(self):
         if self.current_motion is None:
-            pose = self.robot.current_pose() * EE_T_NE
+            pose = self.robot.end_effector_pose * EE_T_NE
         else:
-            pose = self.current_motion.current_pose() * EE_T_NE
+            pose = self.current_motion.end_effector_pose * EE_T_NE
             while np.all(pose.translation() == 0):
-                pose = self.current_motion.current_pose() * EE_T_NE
+                pose = self.current_motion.end_effector_pose * EE_T_NE
                 time.sleep(0.01)
         pos, orn = np.array(pose.translation()), np.array(pose.quaternion())
         return pos, orn
@@ -215,10 +222,28 @@ class PandaFrankXInterface(BaseRobotInterface):
         return pos_orn_to_matrix(*self.get_tcp_pos_orn())
 
     def open_gripper(self, blocking=False):
-        self.gripper.open(blocking)
-
+        if blocking:
+            self.gripper.open(self.gripper_params.speed)
+        else:
+            self.gripper.open_async(self.gripper_params.speed)
+    
     def close_gripper(self, blocking=False):
-        self.gripper.close(blocking)
+        if blocking:
+            self.gripper.grasp(
+                width=0.0,
+                speed=self.gripper_params.speed,
+                force=self.gripper_params.force,
+                epsilon_inner=self.gripper_params.closing_threshold,
+                epsilon_outer=self.gripper_params.closing_threshold
+            )
+        else:
+            self.gripper.grasp_async(
+                width=0.0,
+                speed=self.gripper_params.speed,
+                force=self.gripper_params.force,
+                epsilon_inner=self.gripper_params.closing_threshold,
+                epsilon_outer=self.gripper_params.closing_threshold
+            )
 
     def _frankx_async_impedance_motion(self, target_pos, target_orn):
         """
@@ -229,31 +254,33 @@ class PandaFrankXInterface(BaseRobotInterface):
             target_orn: quaternion (x,y,z,w) | euler_angles (α,β,γ)
         """
         target_pose = to_affine(target_pos, target_orn) * NE_T_EE
-        if self._is_active(ImpedanceMotion):
-            self.current_motion.set_target(target_pose)
-        else:
-            if self.current_motion is not None:
-                self.abort_motion()
-            self.current_motion = self._new_impedance_motion()
-            self.current_motion.set_target(target_pose)
-            self.motion_thread = self.robot.move_async(self.current_motion)
+        # franky doesn't have set_target()
+        # create new motion and call move with asynchronous=True
+        if self.current_motion is not None:
+            self.abort_motion()
+        self.current_motion = self._new_impedance_motion(target_pose)
+        self.robot.move(self.current_motion, asynchronous=True)
 
-    def _new_impedance_motion(self):
+    def _new_impedance_motion(self, target_pose):
         """
-        Create new frankx impedance motion with the params specified in config file.
-
+        Create new franky impedance motion with the params specified in config file.
+    
+        Args:
+            target_pose: Target Affine pose
+    
         Returns:
             Impedance motion object.
         """
-        if self.impedance_params.use_nullspace:
-            return ImpedanceMotion(self.impedance_params.translational_stiffness,
-                                   self.impedance_params.rotational_stiffness,
-                                   self.impedance_params.nullspace_stiffness,
-                                   self.impedance_params.q_d_nullspace,
-                                   self.impedance_params.damping_xi)
-        else:
-            return ImpedanceMotion(self.impedance_params.translational_stiffness,
-                                   self.impedance_params.rotational_stiffness)
+        # Use CartesianImpedanceMotion instead of ExponentialImpedanceMotion
+        # ExponentialImpedanceMotion has a C++ crash bug in franky library
+        # CartesianImpedanceMotion requires a duration parameter
+        duration = Duration(int(self.impedance_params.duration * 1000)) # Convert seconds to milliseconds
+        return CartesianImpedanceMotion(
+            target_pose,
+            duration,
+            translational_stiffness=self.impedance_params.translational_stiffness,
+            rotational_stiffness=self.impedance_params.rotational_stiffness
+        )
 
     def _frankx_async_lin_motion(self, target_pos, target_orn):
         """
@@ -264,13 +291,12 @@ class PandaFrankXInterface(BaseRobotInterface):
             target_orn: quaternion (x,y,z,w) | euler_angles (α,β,γ)
         """
         target_pose = to_affine(target_pos, target_orn) * NE_T_EE
-        if self._is_active(WaypointMotion):
-            self.current_motion.set_next_waypoint(Waypoint(target_pose))
-        else:
-            if self.current_motion is not None:
-                self.abort_motion()
-            self.current_motion = WaypointMotion([Waypoint(target_pose), ], return_when_finished=False)
-            self.motion_thread = self.robot.move_async(self.current_motion)
+        # franky doesn't have set_next_waypoint()
+        # create new motion and call move with asynchronous=True
+        if self.current_motion is not None:
+            self.abort_motion()
+        self.current_motion = CartesianWaypointMotion([CartesianWaypoint(target_pose), ], return_when_finished=False)
+        self.motion_thread = self.robot.move(self.current_motion, asynchronous=True)
 
     def _inverse_kinematics(self, target_pos, target_orn):
         """
@@ -289,7 +315,7 @@ class PandaFrankXInterface(BaseRobotInterface):
 
     def _is_active(self, motion):
         """Returns True if there is a currently active motion with the same type as motion."""
-        return self.current_motion is not None and isinstance(self.current_motion, motion) and self.motion_thread.is_alive()
+        return self.current_motion is not None and isinstance(self.current_motion, motion) and self.robot.is_in_control
 
     def visualize_external_forces(self, canvas_width=500):
         """
