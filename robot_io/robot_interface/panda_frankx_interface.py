@@ -11,7 +11,7 @@ from frankx import Affine, JointMotion, LinearMotion, Robot, PathMotion, Waypoin
 from frankx.gripper import Gripper
 from _frankx import NetworkException
 
-from robot_io.utils.frankx_utils import to_affine
+from robot_io.robot_io.utils.franky_utils import to_affine
 from robot_io.utils.utils import pos_orn_to_matrix, get_git_root, ReferenceType
 import logging
 log = logging.getLogger(__name__)
