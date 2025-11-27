@@ -54,9 +54,7 @@ All IK tests passed
 
 ### 3. panda_frankx_interface.py Migration
 
-**File remains named:** `panda_frankx_interface.py` (not renamed, for backward compatibility)
-
-## Critical API Changes:
+File will be renamed after migration fully finishes/
 
 ### Imports (Line 8-14)
 - `frankx` → `franky` - New library package name
