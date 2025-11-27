@@ -2,10 +2,10 @@
 
 Because `robotio` combines older and newer repositories, some system requirements are not natively available on Ubuntu 24.04. This can lead to compatibility and compilation errors. To prevent this, we recommend creating a dedicated Conda environment to install all necessary tools cleanly.
 
-Tested versions for environment: `python 3.8.20, cmake 3.22.1, numpy 1.24.4, libfranka 0.9.2, pybind11 3.0.1, eigen 3.4.0`
+Tested versions for environment: `python 3.8.20, cmake 3.22.1, numpy 1.24.4, libfranka 0.9.2, pybind11 3.0.1, eigen 3.4.0, cython 3.0.11, scipy 1.10.1 and 0.58.1 `
 
 ```
-conda create -n robotio python=3.8 cmake=3.22.1 numpy libfranka pybind11 eigen -c conda-forge -y
+conda create -n robotio python=3.8 cmake=3.22.1 numpy libfranka pybind11 eigen cython scipy -c conda-forge -y
 conda activate robotio
 ```
 Please ensure all installations are performed inside this active Conda environment to prevent permission or build errors.

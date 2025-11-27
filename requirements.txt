@@ -1,9 +1,9 @@
 setuptools
-numpy
+#numpy
 open3d
-scipy
+#scipy
 gym
-numba
+#numba
 spnav
 hydra-core
 hydra-colorlog
@@ -12,5 +12,5 @@ digit-interface
 numpy-quaternion
 gitpython
 pyttsx3
-Cython
+#Cython
 commentjson
