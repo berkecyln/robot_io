@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 # Transform TCP orientation so z-axis faces down for consistency with other robot interfaces.
 NE_T_EE = EE_T_NE = Affine(
     translation=np.array([0.0, 0.0, 0.0]).reshape(3, 1),
-    quaternion=np.array([0.0, 1.0, 0.0, 0.0]).reshape(4, 1)  # 180° rotation around Y-axis
+    quaternion=np.array([0.0, 1.0, 0.0, 0.0]).reshape(4, 1)
 )
 
 # align the output of force torque reading with the EE frame
