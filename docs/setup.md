@@ -58,6 +58,19 @@ python realsense.py  # test script
 
 ## Franka Emika Panda
 
+**Connection:**
+
+By default robot ip is: `172.16.0.2`
+
+To be able to communicate with robot you must be in same network with robot so please create a ne profile in network as:
+
+IPv4 Method: Manual \
+Address: 172.16.0.X (put so ething different than 2 to X)\
+Netmask: 255.255.255.0\
+Gateway: Leave empty
+
+After creating this profile you need to seelct this profile when you will use te robot via `https://172.16.0.2/desk/`
+
 ### IK fast
 IK fast is an analytic IK solver. In order to use IK fast, first install `ikfast-pybind`:
 
