@@ -1,6 +1,6 @@
 defaults:
   - env: env
-  - robot: panda_frankx_interface_policy
+  - robot: panda_franky_interface_policy
   - cams: no_cameras
   - override hydra/job_logging: colorlog
   - override hydra/hydra_logging: colorlog

@@ -30,7 +30,7 @@ NE_T_EE = EE_T_NE = Affine(
 WRENCH_FRAME_CONV = np.diag([-1, 1, 1, -1, 1, 1])  # np.eye(6)
 
 
-class PandaFrankXInterface(BaseRobotInterface):
+class PandaFrankYInterface(BaseRobotInterface):
     """
     Robot control interface for Franka Emika Panda robot to be used on top of this Frankx fork
     (https://github.com/lukashermann/frankx)

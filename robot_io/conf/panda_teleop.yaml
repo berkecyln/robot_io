@@ -1,6 +1,6 @@
 defaults:
   - env: env
-  - robot: panda_frankx_interface_vr
+  - robot: panda_franky_interface_vr
   - input: vr_input
   - recorder: vr_recorder
   - cams: camera_manager

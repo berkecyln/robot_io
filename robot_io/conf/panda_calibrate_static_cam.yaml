@@ -11,7 +11,7 @@ hydra:
 
 defaults:
   - setup
-  - robot: panda_frankx_interface_vr
+  - robot: panda_franky_interface_vr
   - input: vr_input
   - cams/static_cam@cam: kinect4_highres
   - recorder: calib_recorder
