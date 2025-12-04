@@ -14,7 +14,7 @@ from franky import (
     NetworkException, ReferenceType as FrankyReferenceType
 )
 
-from robot_io.robot_io.utils.franky_utils import to_affine
+from robot_io.utils.franky_utils import to_affine
 from robot_io.utils.utils import pos_orn_to_matrix, get_git_root, ReferenceType
 import logging
 log = logging.getLogger(__name__)
@@ -32,8 +32,7 @@ WRENCH_FRAME_CONV = np.diag([-1, 1, 1, -1, 1, 1])  # np.eye(6)
 
 class PandaFrankYInterface(BaseRobotInterface):
     """
-    Robot control interface for Franka Emika Panda robot to be used on top of this Frankx fork
-    (https://github.com/lukashermann/frankx)
+    Robot control interface for Franka Emika Panda robot to be used on top of this Franky fork
 
     Args:
         fci_ip: IPv4 address of Franka Control Interface (FCI).
@@ -45,10 +44,10 @@ class PandaFrankYInterface(BaseRobotInterface):
         workspace_limits: Workspace limits defined as a bounding box or as hollow cylinder.
         libfranka_params: DictConfig of params for libfranka.
         use_impedance: If True, use impedance control whenever it is possible.
-        frankx_params: DictConfig of general params for Frankx.
-        impedance_params: DictConfig of params for Frankx impedance motion.
+        franky_params: DictConfig of general params for Franky.
+        impedance_params: DictConfig of params for Franky impedance motion.
         rel_action_params: DictConfig of params for relative action control.
-        gripper_params: DictConfig of params for Frankx gripper.
+        gripper_params: DictConfig of params for Franky gripper.
     """
     def __init__(self,
                  fci_ip,
@@ -60,7 +59,7 @@ class PandaFrankYInterface(BaseRobotInterface):
                  workspace_limits,
                  libfranka_params,
                  use_impedance,
-                 frankx_params,
+                 franky_params,
                  impedance_params,
                  rel_action_params,
                  gripper_params):
@@ -74,7 +73,7 @@ class PandaFrankYInterface(BaseRobotInterface):
         self.robot.recover_from_errors()
         #self.robot.set_default_behavior()
         self.libfranka_params = libfranka_params
-        self.set_robot_params(libfranka_params, frankx_params)
+        self.set_robot_params(libfranka_params, franky_params)
 
         # impedance
         self.use_impedance = use_impedance
@@ -100,7 +99,7 @@ class PandaFrankYInterface(BaseRobotInterface):
     def __del__(self):
         self.abort_motion()
 
-    def set_robot_params(self, libfranka_params, frankx_params):
+    def set_robot_params(self, libfranka_params, franky_params):
         # params of libfranka
         self.robot.set_collision_behavior(libfranka_params.contact_torque_threshold,
                                           libfranka_params.collision_torque_threshold,
@@ -110,9 +109,9 @@ class PandaFrankYInterface(BaseRobotInterface):
 
         # params of franky
         self.robot.relative_dynamics_factor = RelativeDynamicsFactor(
-            frankx_params.velocity_rel,
-            frankx_params.acceleration_rel,
-            frankx_params.jerk_rel
+            franky_params.velocity_rel,
+            franky_params.acceleration_rel,
+            franky_params.jerk_rel
         )
 
     def move_to_neutral(self):
@@ -135,7 +134,7 @@ class PandaFrankYInterface(BaseRobotInterface):
     def move_async_cart_pos_rel_lin(self, rel_target_pos, rel_target_orn):
         target_pos, target_orn = self.rel_action_converter.to_absolute(rel_target_pos, rel_target_orn, self.get_state(), self.reference_type)
         self.reference_type = ReferenceType.RELATIVE
-        self._frankx_async_impedance_motion(target_pos, target_orn)
+        self._franky_async_impedance_motion(target_pos, target_orn)
 
     def move_async_cart_pos_abs_ptp(self, target_pos, target_orn):
         self.reference_type = ReferenceType.ABSOLUTE
@@ -156,9 +155,9 @@ class PandaFrankYInterface(BaseRobotInterface):
     def move_async_cart_pos_abs_lin(self, target_pos, target_orn):
         self.reference_type = ReferenceType.ABSOLUTE
         if self.use_impedance:
-            self._frankx_async_impedance_motion(target_pos, target_orn)
+            self._franky_async_impedance_motion(target_pos, target_orn)
         else:
-            self._frankx_async_lin_motion(target_pos, target_orn)
+            self._franky_async_lin_motion(target_pos, target_orn)
 
     def move_async_joint_pos(self, joint_positions):
         # franky doesn't have set_next_target()
@@ -209,13 +208,13 @@ class PandaFrankYInterface(BaseRobotInterface):
 
     def get_tcp_pos_orn(self):
         if self.current_motion is None:
-            pose = self.robot.end_effector_pose * EE_T_NE
+            pose = self.robot.current_pose.end_effector_pose * EE_T_NE
         else:
             pose = self.current_motion.end_effector_pose * EE_T_NE
-            while np.all(pose.translation() == 0):
+            while np.all(pose.translation == 0):
                 pose = self.current_motion.end_effector_pose * EE_T_NE
                 time.sleep(0.01)
-        pos, orn = np.array(pose.translation()), np.array(pose.quaternion())
+        pos, orn = np.array(pose.translation).flatten(), np.array(pose.quaternion).flatten()
         return pos, orn
 
     def get_tcp_pose(self):
@@ -245,7 +244,7 @@ class PandaFrankYInterface(BaseRobotInterface):
                 epsilon_outer=self.gripper_params.closing_threshold
             )
 
-    def _frankx_async_impedance_motion(self, target_pos, target_orn):
+    def _franky_async_impedance_motion(self, target_pos, target_orn):
         """
         Start new async impedance motion. Do not call this directly.
 
@@ -282,7 +281,7 @@ class PandaFrankYInterface(BaseRobotInterface):
             rotational_stiffness=self.impedance_params.rotational_stiffness
         )
 
-    def _frankx_async_lin_motion(self, target_pos, target_orn):
+    def _franky_async_lin_motion(self, target_pos, target_orn):
         """
         Start new Waypaint motion without impedance. Do not call this directly.
 

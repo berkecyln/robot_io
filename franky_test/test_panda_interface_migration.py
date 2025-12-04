@@ -1,5 +1,5 @@
 """
-FrankyY Migration Test for panda_frankx_interface.py
+FrankyY Migration Test for panda_franky_interface.py
 
 EXPECTED ROBOT BEHAVIOR:
 - Gripper will open and close 

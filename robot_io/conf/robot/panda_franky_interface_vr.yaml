@@ -20,7 +20,7 @@ libfranka_params:
   franka_joint_impedance: [50, 50, 50, 50, 50, 50, 50]
 #  franka_joint_impedance: [ 3000, 3000, 3000, 2500, 2500, 2000, 2000 ]
 
-frankx_params:
+franky_params:
   velocity_rel: 0.3
   acceleration_rel: 0.3
   jerk_rel: 0.2
