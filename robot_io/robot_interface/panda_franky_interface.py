@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 # Transform TCP orientation so z-axis faces down for consistency with other robot interfaces.
 NE_T_EE = EE_T_NE = Affine(
     translation=np.array([0.0, 0.0, 0.0]).reshape(3, 1),
-    quaternion=np.array([0.0, 1.0, 0.0, 0.0]).reshape(4, 1)
+    quaternion=np.array([0.0, 0.0, 1.0, 0.0]).reshape(4, 1) # 180 deg around Z-axis
 )
 
 # align the output of force torque reading with the EE frame
@@ -90,7 +90,7 @@ class PandaFrankYInterface(BaseRobotInterface):
         self.open_gripper(blocking=True)
 
         # F_T_NE is the transformation from nominal end-effector (NE) frame to flange (F) frame.
-        F_T_NE = self.robot.state.F_T_NE.matrix.T
+        F_T_NE = self.robot.state.F_T_NE.matrix
         self.ik_solver = hydra.utils.instantiate(ik, F_T_NE=F_T_NE)
 
         self.reference_type = ReferenceType.ABSOLUTE
@@ -119,15 +119,22 @@ class PandaFrankYInterface(BaseRobotInterface):
 
     def move_cart_pos_abs_ptp(self, target_pos, target_orn):
         self.reference_type = ReferenceType.ABSOLUTE
+        target_pose = to_affine(target_pos, target_orn) * NE_T_EE
         # if self.use_impedance:
         #     log.warning("Impedance motion is not available for synchronous motions. Not using impedance.")
-        q_desired = self._inverse_kinematics(target_pos, target_orn)
+        transformed_pos = np.array(target_pose.translation).flatten()
+        transformed_orn = np.array(target_pose.quaternion).flatten()
+        q_desired = self._inverse_kinematics(transformed_pos, transformed_orn)
         return self.move_joint_pos(q_desired)
 
     def move_cart_pos_rel_ptp(self, rel_target_pos, rel_target_orn):
         target_pos, target_orn = self.rel_action_converter.to_absolute(rel_target_pos, rel_target_orn, self.get_state(), self.reference_type)
         self.reference_type = ReferenceType.RELATIVE
-        q_desired = self._inverse_kinematics(target_pos, target_orn)
+
+        target_pose = to_affine(target_pos, target_orn) * NE_T_EE
+        transformed_pos = np.array(target_pose.translation).flatten()
+        transformed_orn = np.array(target_pose.quaternion).flatten()
+        q_desired = self._inverse_kinematics(transformed_pos, transformed_orn)
         self.abort_motion()
         self.robot.move(JointMotion(q_desired))
 
@@ -140,7 +147,11 @@ class PandaFrankYInterface(BaseRobotInterface):
         self.reference_type = ReferenceType.ABSOLUTE
         if self.use_impedance:
             log.warning("Impedance motion for cartesian PTP is currently not implemented. Not using impedance.")
-        q_desired = self._inverse_kinematics(target_pos, target_orn)
+        
+        target_pose = to_affine(target_pos, target_orn) * NE_T_EE
+        transformed_pos = np.array(target_pose.translation).flatten()
+        transformed_orn = np.array(target_pose.quaternion).flatten()
+        q_desired = self._inverse_kinematics(transformed_pos, transformed_orn)
         self.move_async_joint_pos(q_desired)
 
     def move_cart_pos_abs_lin(self, target_pos, target_orn):

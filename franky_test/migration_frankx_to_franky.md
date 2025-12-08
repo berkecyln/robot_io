@@ -52,9 +52,7 @@ Correctly handles unreachable positions
 All IK tests passed
 ```
 
-### 3. panda_frankx_interface.py
-
-**Note:** Only remaining replacement is file and function renaming which i will do in lab computer and do additional test to be safe
+### 3. panda_frankx_interface.py -> panda_franky_interface.py
 
 **Note:** franky uses property access rather than method calls so most of old methods replaced via equivalent access
 
@@ -70,6 +68,7 @@ All IK tests passed
   ```
 
 - Frame translation part changed to translation and quaternion parts since Franky requires numpy arrays with specific shapes (3x1 and 4x1), not scalars.
+  - In `F_T_NE` initialization removed `.T` transpose that was causing matrix corruption. Franky's `.matrix` property returns row-major format directly, unlike FrankX.
 - In robot initialization several things are changed:
   - `Robot()` not use urdf_path anymore since franky has build in panda franka model inside.
   - `self.robot.set_default_behavior()` is commented out since in franky this methid does not exist.
@@ -94,7 +93,18 @@ All IK tests passed
   - frankx's `ImpedanceMotion` can be changed with franky's `ExponentialImpedanceMotion` or `CartesianImpedanceMotion`.
   - However when we use `ExponentialImpedanceMotion` it creates C++ crash which I controlled and it is an know issue and still open as [bug](https://github.com/pantor/frankx/issues/21) so I used `CartesianImpedanceMotion` but it requires `Duration` object in **milliseconds**, I have added duration parameter to configs impedance params.
   -  > NEED REVIEW: if dont want to use Duration we need to find a different way to replace frankx's `ImpedanceMotion`.
+- All cartesian PTP motion functions now consistently apply `NE_T_EE` transformation before calling IK solver.   This makes PTP functions consistent with LIN functions which already had this transformation.
+  1. `move_cart_pos_abs_ptp()` - Added `target_pose = to_affine(target_pos, target_orn) * NE_T_EE`
+  2. `move_cart_pos_rel_ptp()` - Added `target_pose = to_affine(target_pos, target_orn) * NE_T_EE`
+  3. `move_async_cart_pos_abs_ptp()` - Added `target_pose = to_affine(target_pos, target_orn) * NE_T_EE`
+```python
+  target_pose = to_affine(target_pos, target_orn) * NE_T_EE
+  transformed_pos = np.array(target_pose.translation).flatten()
+  transformed_orn = np.array(target_pose.quaternion).flatten()
+  q_desired = self._inverse_kinematics(transformed_pos, transformed_orn)
+```
 - Lastly `motion_thread.is_alive()` is replaced via `robot.is_in_control`
+
 
 **Test Results:**
 
