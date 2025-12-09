@@ -24,6 +24,11 @@ franky_params:
   acceleration_rel: 0.2
   jerk_rel: 0.2
 
+waypoint_motion_params:
+  relative_dynamics_factor: 0.2  # Speed factor for CartesianWaypointMotion (0.0-1.0)
+  # minimum_time: null  # Minimum time per waypoint in seconds
+  # hold_target_duration: 0.0  # Time to hold at each waypoint in seconds
+
 impedance_params:
   translational_stiffness: 600  # 400 for teleop, 600 for 3dmouse / policy
   rotational_stiffness: 200  # 60 for teleop, 200 for 3dmouse / policy

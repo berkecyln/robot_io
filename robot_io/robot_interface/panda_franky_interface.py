@@ -48,6 +48,7 @@ class PandaFrankYInterface(BaseRobotInterface):
         impedance_params: DictConfig of params for Franky impedance motion.
         rel_action_params: DictConfig of params for relative action control.
         gripper_params: DictConfig of params for Franky gripper.
+        waypoint_motion_params: DictConfig of params for Cartesian waypoint motions.
     """
     def __init__(self,
                  fci_ip,
@@ -62,7 +63,8 @@ class PandaFrankYInterface(BaseRobotInterface):
                  franky_params,
                  impedance_params,
                  rel_action_params,
-                 gripper_params):
+                 gripper_params,
+                 waypoint_motion_params):
         self.name = "panda"
         self.neutral_pose = neutral_pose
         self.ll = ll
@@ -78,6 +80,9 @@ class PandaFrankYInterface(BaseRobotInterface):
         # impedance
         self.use_impedance = use_impedance
         self.impedance_params = impedance_params
+        
+        # waypoint motion
+        self.waypoint_motion_params = waypoint_motion_params
 
         self.rel_action_converter = RelActionControl(ll=ll, ul=ul, workspace_limits=workspace_limits,
                                                      **rel_action_params)
@@ -162,6 +167,31 @@ class PandaFrankYInterface(BaseRobotInterface):
         target_pose = to_affine(target_pos, target_orn) * NE_T_EE
         self.current_motion = CartesianWaypointMotion([CartesianWaypoint(target_pose)])
         self.robot.move(self.current_motion)
+
+    def move_cart_waypoints(self, waypoints_pos, waypoints_orn):
+        """
+        Move through multiple Cartesian waypoints in one smooth motion.
+        
+        Args:
+            waypoints_pos: List of positions [(x,y,z), (x,y,z), ...]
+            waypoints_orn: List of orientations [quat1, quat2, ...] where quat = (x,y,z,w)
+        """
+        self.reference_type = ReferenceType.ABSOLUTE
+        
+        # Convert all waypoints to CartesianWaypoint objects
+        cartesian_waypoints = []
+        for pos, orn in zip(waypoints_pos, waypoints_orn):
+            target_pose = to_affine(pos, orn) * NE_T_EE
+            cartesian_waypoints.append(CartesianWaypoint(target_pose))
+        
+        # Execute motion
+        self.abort_motion()
+        self.current_motion = CartesianWaypointMotion(
+            cartesian_waypoints,
+            relative_dynamics_factor=self.waypoint_motion_params.relative_dynamics_factor
+        )
+        self.robot.move(self.current_motion)
+        
 
     def move_async_cart_pos_abs_lin(self, target_pos, target_orn):
         self.reference_type = ReferenceType.ABSOLUTE
