@@ -5,10 +5,17 @@ Because `robotio` combines older and newer repositories, some system requirement
 Tested versions for environment: `python 3.8.20, cmake 3.22.1, numpy 1.24.4, libfranka 0.9.2, pybind11 3.0.1, eigen 3.4.0, cython 3.0.11, scipy 1.10.1 and 0.58.1 `
 
 ```
-conda create -n robotio python=3.8 cmake=3.22.1 numpy libfranka pybind11 eigen cython scipy -c conda-forge -y
+conda create -n robotio python=3.8 cmake=3.22.1 numpy libfranka pybind11 eigen cython scipy opencv -c conda-forge -y
 conda activate robotio
 ```
 Please ensure all installations are performed inside this active Conda environment to prevent permission or build errors.
+
+To make files work easily please add robot_io to Python path permanently:
+```
+echo 'export PYTHONPATH=<PATH_TO_ROBOT_IO>:$PYTHONPATH' >> ~/.bashrc
+source ~/.bashrc
+```
+Replace `<PATH_TO_ROBOT_IO>` with your actual robot_io directory path
 
 # Cameras
 
@@ -31,6 +38,8 @@ Please ensure all installations are performed inside this active Conda environme
 ### RealSense SR300/SR305
 
 First follow installation instructions for librealsense2 [here](https://github.com/IntelRealSense/librealsense)
+
+Before running `realsense.py` please make sure you compiled [marker detector](#marker-detector)
 ```
 pip install pyrealsense2
 # Make sure you are in robot_io project then run
@@ -192,5 +201,8 @@ Robot Teleop instructions:
 
 ```
 $ cd robot_io/marker_detection/apriltag_detection
+$ export CPLUS_INCLUDE_PATH=$CONDA_PREFIX/include/opencv4:$CONDA_PREFIX/include:$CPLUS_INCLUDE_PATH
+$ export LIBRARY_PATH=$CONDA_PREFIX/lib:$LIBRARY_PATH
+$ export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
 $ python setupBatch.py build_ext --inplace
 ```
