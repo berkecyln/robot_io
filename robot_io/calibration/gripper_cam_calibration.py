@@ -51,22 +51,24 @@ class GripperCamPoseSampler:
         Sample a random pose
         Returns:
             target_pos: Position (x,y,z)
-            target_pos: Orientation quaternion (x,y,z,w)
+            target_orn: Orientation quaternion (x,y,z,w)
         """
         theta = np.random.uniform(*self.theta_limits)
         vec = np.array([np.cos(theta), np.sin(theta), 0])
         vec = vec * np.random.uniform(*self.r_limits)
-        yaw = np.random.uniform(*self.yaw_limits)
         trans = np.cross(np.array([0, 0, 1]), vec)
         trans = trans * np.random.uniform(*self.trans_limits)
         height = np.array([0, 0, 1]) * np.random.uniform(*self.h_limits)
         trans_final = self.initial_pos + vec + trans + height
+
+        yaw = np.random.uniform(*self.yaw_limits)
         pitch = np.random.uniform(*self.pitch_limit)
         roll = np.random.uniform(*self.roll_limit)
 
         target_pos = np.array(trans_final)
-        target_orn = np.array([math.pi + pitch, roll, theta + math.pi + yaw])
+        target_orn = np.array([math.pi + pitch, roll, self.initial_orn[2] + yaw + theta]) # math.pi from yaw removed since franky does this in NE_T_EE at initialization
         target_orn = euler_to_quat(target_orn)
+
         return target_pos, target_orn
 
 
@@ -86,6 +88,7 @@ def record_gripper_cam_trajectory(robot, marker_detector, cfg):
     robot.move_to_neutral()
     time.sleep(2)
     _, orn = robot.get_tcp_pos_orn()
+    print('Initial pose: ', _, orn)
     pose_sampler = hydra.utils.instantiate(cfg.gripper_cam_pose_sampler, initial_orn=orn)
 
     i = 0
@@ -129,6 +132,8 @@ def main(cfg):
     save_calibration(robot.name, cam.name, "cam", "tcp", T_tcp_cam)
     calculate_error(T_tcp_cam, tcp_poses, marker_poses)
     visualize_calibration_gripper_cam(cam, T_tcp_cam)
+
+    robot.move_to_neutral()
 
 
 if __name__ == "__main__":
