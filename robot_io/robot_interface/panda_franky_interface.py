@@ -124,22 +124,16 @@ class PandaFrankYInterface(BaseRobotInterface):
 
     def move_cart_pos_abs_ptp(self, target_pos, target_orn):
         self.reference_type = ReferenceType.ABSOLUTE
-        target_pose = to_affine(target_pos, target_orn) * NE_T_EE
         # if self.use_impedance:
         #     log.warning("Impedance motion is not available for synchronous motions. Not using impedance.")
-        transformed_pos = np.array(target_pose.translation).flatten()
-        transformed_orn = np.array(target_pose.quaternion).flatten()
-        q_desired = self._inverse_kinematics(transformed_pos, transformed_orn)
+        q_desired = self._inverse_kinematics(target_pos, target_orn)
         return self.move_joint_pos(q_desired)
 
     def move_cart_pos_rel_ptp(self, rel_target_pos, rel_target_orn):
         target_pos, target_orn = self.rel_action_converter.to_absolute(rel_target_pos, rel_target_orn, self.get_state(), self.reference_type)
         self.reference_type = ReferenceType.RELATIVE
 
-        target_pose = to_affine(target_pos, target_orn) * NE_T_EE
-        transformed_pos = np.array(target_pose.translation).flatten()
-        transformed_orn = np.array(target_pose.quaternion).flatten()
-        q_desired = self._inverse_kinematics(transformed_pos, transformed_orn)
+        q_desired = self._inverse_kinematics(target_pos, target_orn)
         self.abort_motion()
         self.robot.move(JointMotion(q_desired))
 
@@ -153,20 +147,18 @@ class PandaFrankYInterface(BaseRobotInterface):
         if self.use_impedance:
             log.warning("Impedance motion for cartesian PTP is currently not implemented. Not using impedance.")
         
-        target_pose = to_affine(target_pos, target_orn) * NE_T_EE
-        transformed_pos = np.array(target_pose.translation).flatten()
-        transformed_orn = np.array(target_pose.quaternion).flatten()
-        q_desired = self._inverse_kinematics(transformed_pos, transformed_orn)
+        q_desired = self._inverse_kinematics(target_pos, target_orn)
         self.move_async_joint_pos(q_desired)
 
     def move_cart_pos_abs_lin(self, target_pos, target_orn):
-        self.reference_type = ReferenceType.ABSOLUTE
+        self.reference_type = FrankyReferenceType.Absolute
         if self.use_impedance:
             log.warning("Impedance motion for cartesian LIN is currently not implemented. Not using impedance.")
         self.abort_motion()
         target_pose = to_affine(target_pos, target_orn) * NE_T_EE
-        self.current_motion = CartesianWaypointMotion([CartesianWaypoint(target_pose)])
+        self.current_motion = CartesianMotion(target_pose, self.reference_type, self.robot.relative_dynamics_factor)
         self.robot.move(self.current_motion)
+        self.current_motion = None
 
     def move_cart_waypoints(self, waypoints_pos, waypoints_orn):
         """
@@ -191,6 +183,7 @@ class PandaFrankYInterface(BaseRobotInterface):
             relative_dynamics_factor=self.waypoint_motion_params.relative_dynamics_factor
         )
         self.robot.move(self.current_motion)
+        self.current_motion = None
         
 
     def move_async_cart_pos_abs_lin(self, target_pos, target_orn):

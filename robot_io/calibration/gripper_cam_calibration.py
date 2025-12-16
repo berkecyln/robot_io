@@ -66,7 +66,7 @@ class GripperCamPoseSampler:
         roll = np.random.uniform(*self.roll_limit)
 
         target_pos = np.array(trans_final)
-        target_orn = np.array([math.pi + pitch, roll, self.initial_orn[2] + yaw + theta]) # math.pi from yaw removed since franky does this in NE_T_EE at initialization
+        target_orn = np.array([math.pi + pitch, roll, yaw + theta]) # math.pi from yaw removed since its alredy done in EE_T_NE
         target_orn = euler_to_quat(target_orn)
 
         return target_pos, target_orn
