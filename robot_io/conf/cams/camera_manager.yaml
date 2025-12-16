@@ -1,9 +1,12 @@
 _target_: robot_io.cams.camera_manager.CameraManager
 _recursive_: false
+
 use_gripper_cam: true
-use_static_cam: true
+use_static_cam: false
+
 static_cam_count: 1
-threaded_cameras: true
+threaded_cameras: false  # disable for realsense
+
 defaults:
-  - gripper_cam: framos
+  - gripper_cam: realsense_d435
   - static_cam: kinect4

@@ -32,7 +32,15 @@
 ### Gripper Camera
 - Place Aruco Marker in front of robot
 - Run `python robot_io/calibration/gripper_cam_calibration.py --config-name=[panda_calibrate_gripper_cam|kuka_calibrate_gripper_cam]`
-
+- If you want to visualize calibration in 3d point cloud
+    - download open3d via 
+    ```
+    conda install -c open3d-admin open3d
+    ```
+    - change the file name in `control_gripper_cam_calibration.py` then run 
+    ```
+    python control_gripper_cam_calibration.py
+    ```
 ------------------
 
 ### Teleoperation

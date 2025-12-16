@@ -1,2 +1,3 @@
-user: lagandua
-project_dir: "/export/home/${user}/robot_io_dev/"
+user: ceylanb
+project_dir: "/home/${user}/robot/"
+#project_dir: "/export/home/${user}/robot_io_dev/"
