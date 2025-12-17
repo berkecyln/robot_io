@@ -18,3 +18,4 @@ params:
   hue: 0.0
   enable_auto_exposure: 1.0
   enable_auto_white_balance: 1.0
+# flipped_cam: true # changing this need recalibration
