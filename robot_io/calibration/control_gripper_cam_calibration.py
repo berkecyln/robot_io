@@ -85,5 +85,5 @@ def visualize_calibration(calibration_file):
 
 
 if __name__ == "__main__":
-    calibration_file = "/home/ceylanb/robot/robot_io/calibration/calibration_files/panda_realsenseD435_T_tcp_cam_2025_12_16__17_33.npy" # <== change this to calibration file
+    calibration_file = "/home/ceylanb/robot/robot_io/calibration/calibration_files/panda_realsenseD435.npy" # <== change this to calibration file
     visualize_calibration(calibration_file)
