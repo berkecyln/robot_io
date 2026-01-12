@@ -3,9 +3,11 @@ _recursive_: false
 name: realsenseD435
 fps: 30
 img_type: "rgb_depth"
-resolution: [640, 480]
-resize_resolution: [200, 200]
-crop_coords: [0, 480, 80, 560]
+resolution: [640, 480] # higher resolution setup
+resize_resolution: [640, 360] 
+crop_coords: [120, 480, 0, 640]  # crop for longer finger 
+# resize_resolution: [200, 200]
+# crop_coords: [0, 480, 80, 560]
 params:
   white_balance: 3400.0
   exposure: 300.0
