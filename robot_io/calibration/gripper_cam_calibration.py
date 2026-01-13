@@ -129,16 +129,11 @@ def main(cfg):
     # marker_poses = list(data["marker_poses"])
     T_tcp_cam = calibrate_gripper_cam_least_squares(tcp_poses, marker_poses)
 
-    # Fix camera Z-axis orientation for Franky
-    # The calibration computes T_tcp_cam with camera Z pointing UP, but the physical
-    # camera points DOWN. Apply 180° rotation around X to flip Y and Z axes.
-    # This is needed due to the frame convention difference in Franky vs FrankX.
-    R_flip = np.array([[1, 0, 0, 0],
-                       [0, -1, 0, 0],
-                       [0, 0, -1, 0],
-                       [0, 0, 0, 1]])
-    T_tcp_cam = T_tcp_cam @ R_flip
-    print(f"Applied Z-axis flip correction. Camera Z in TCP frame: {T_tcp_cam[:3, 2]}")
+    # NOTE: The calibration output is correct as-is. DO NOT apply any flip.
+    # The camera Z-axis in TCP frame should be ~[x, y, +0.89] (pointing forward in TCP).
+    # When the gripper points down (180° around X), this becomes negative in world frame,
+    # meaning camera correctly points DOWN at the table.
+    print(f"Calibration complete. Camera Z in TCP frame: {T_tcp_cam[:3, 2]}")
 
     save_calibration(robot.name, cam.name, "cam", "tcp", T_tcp_cam)
     calculate_error(T_tcp_cam, tcp_poses, marker_poses)

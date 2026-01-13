@@ -152,8 +152,8 @@ class PandaFrankYInterface(BaseRobotInterface):
 
     def move_cart_pos_abs_lin(self, target_pos, target_orn):
         self.reference_type = FrankyReferenceType.Absolute
-        if self.use_impedance:
-            log.warning("Impedance motion for cartesian LIN is currently not implemented. Not using impedance.")
+        # if self.use_impedance:
+        #     log.warning("Impedance motion for cartesian LIN is currently not implemented. Not using impedance.")
         self.abort_motion()
         target_pose = to_affine(target_pos, target_orn) * NE_T_EE
         self.current_motion = CartesianMotion(target_pose, self.reference_type, self.robot.relative_dynamics_factor)
