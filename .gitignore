@@ -16,4 +16,4 @@ robot_io/calibration/outputs/2022-04-14/15-46-40/.hydra/hydra.yaml
 *.log
 *.pyc
 *.npz
-calibration/
+calibration/calibration_files/*
