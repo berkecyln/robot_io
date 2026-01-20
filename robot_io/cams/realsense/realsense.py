@@ -112,8 +112,41 @@ class Realsense(Camera):
     def get_intrinsics(self):
         color_profile = rs.video_stream_profile(self.profile.get_stream(rs.stream.color))
         intr = color_profile.get_intrinsics()
-        intr_rgb = dict(width=intr.width, height=intr.height, fx=intr.fx, fy=intr.fy,
-                        cx=intr.ppx, cy=intr.ppy, crop_coords=self.crop_coords,
+        
+        fx, fy = intr.fx, intr.fy
+        cx, cy = intr.ppx, intr.ppy
+        width, height = intr.width, intr.height
+
+        # Handle Flip (180 degree rotation)
+        if self.flipped_cam:
+            cx = width - cx
+            cy = height - cy
+
+        # 2. Handle Crop
+        if self.crop_coords is not None:
+            c = self.crop_coords
+            cx -= c[2] # x_start
+            cy -= c[0] # y_start
+            width = c[3] - c[2]
+            height = c[1] - c[0]
+
+        # 3. Handle Resize
+        if self.resize_resolution is not None:
+            target_w, target_h = self.resize_resolution
+            
+            scale_x = target_w / width
+            scale_y = target_h / height
+            
+            fx *= scale_x
+            fy *= scale_y
+            cx *= scale_x
+            cy *= scale_y
+            
+            width = target_w
+            height = target_h
+
+        intr_rgb = dict(width=width, height=height, fx=fx, fy=fy,
+                        cx=cx, cy=cy, crop_coords=self.crop_coords,
                         resize_resolution=self.resize_resolution, dist_coeffs=self.get_dist_coeffs())
         return intr_rgb
 
