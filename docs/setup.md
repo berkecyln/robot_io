@@ -25,7 +25,7 @@ Replace `<PATH_TO_ROBOT_IO>` with your actual robot_io directory path
   and k4atools from https://packages.microsoft.com/ubuntu/18.04/prod/pool/main/k/k4a-tools \
   Install with `sudo dpkg -i`
 
-- Install Open3D in your Python env with `pip install open3d`
+- Install pyk4a and opencv-python in your Python env with `pip install pyk4a opencv-python`
 
 - For default usage, start `$ python robot_io/cams/kinect4/kinect4.py`
 
