@@ -226,10 +226,12 @@ class PandaFrankYInterface(BaseRobotInterface):
                 continue
 
     def get_state(self):
-        if self.current_motion is None:
-            _state = self.robot.state
-        else:
-            _state = self.current_motion.get_robot_state()
+        # if self.current_motion is None:
+        #     _state = self.robot.state
+        # else:
+        #     _state = self.current_motion.get_robot_state()
+        _state = self.robot.state
+
         pos, orn = self.get_tcp_pos_orn()
 
         state = {"tcp_pos": pos,
@@ -241,13 +243,15 @@ class PandaFrankYInterface(BaseRobotInterface):
         return state
 
     def get_tcp_pos_orn(self):
-        if self.current_motion is None:
-            pose = self.robot.current_pose.end_effector_pose * EE_T_NE
-        else:
-            pose = self.current_motion.end_effector_pose * EE_T_NE
-            while np.all(pose.translation == 0):
-                pose = self.current_motion.end_effector_pose * EE_T_NE
-                time.sleep(0.01)
+        # if self.current_motion is None:
+        #     pose = self.robot.current_pose.end_effector_pose * EE_T_NE
+        # else:
+        #     pose = self.current_motion.end_effector_pose * EE_T_NE
+        #     while np.all(pose.translation == 0):
+        #         pose = self.current_motion.end_effector_pose * EE_T_NE
+        #         time.sleep(0.01)
+        pose = self.robot.current_pose.end_effector_pose * EE_T_NE
+
         pos, orn = np.array(pose.translation).flatten(), np.array(pose.quaternion).flatten()
         return pos, orn
 
@@ -289,8 +293,8 @@ class PandaFrankYInterface(BaseRobotInterface):
         target_pose = to_affine(target_pos, target_orn) * NE_T_EE
         # franky doesn't have set_target()
         # create new motion and call move with asynchronous=True
-        if self.current_motion is not None:
-            self.abort_motion()
+        # if self.current_motion is not None:
+        #     self.abort_motion()
         self.current_motion = self._new_impedance_motion(target_pose)
         self.robot.move(self.current_motion, asynchronous=True)
 
@@ -304,15 +308,18 @@ class PandaFrankYInterface(BaseRobotInterface):
         Returns:
             Impedance motion object.
         """
-        # Use CartesianImpedanceMotion instead of ExponentialImpedanceMotion
-        # ExponentialImpedanceMotion has a C++ crash bug in franky library
-        # CartesianImpedanceMotion requires a duration parameter
-        duration = Duration(int(self.impedance_params.duration * 1000)) # Convert seconds to milliseconds
-        return CartesianImpedanceMotion(
+        # duration = Duration(int(self.impedance_params.duration * 1000)) # Convert seconds to milliseconds
+        # return CartesianImpedanceMotion(
+        #     target_pose,
+        #     duration,
+        #     translational_stiffness=self.impedance_params.translational_stiffness,
+        #     rotational_stiffness=self.impedance_params.rotational_stiffness
+        # )
+        return ExponentialImpedanceMotion(
             target_pose,
-            duration,
-            translational_stiffness=self.impedance_params.translational_stiffness,
-            rotational_stiffness=self.impedance_params.rotational_stiffness
+            FrankyReferenceType.Absolute,
+            self.impedance_params.translational_stiffness,
+            self.impedance_params.rotational_stiffness
         )
 
     def _franky_async_lin_motion(self, target_pos, target_orn):
@@ -326,8 +333,8 @@ class PandaFrankYInterface(BaseRobotInterface):
         target_pose = to_affine(target_pos, target_orn) * NE_T_EE
         # franky doesn't have set_next_waypoint()
         # create new motion and call move with asynchronous=True
-        if self.current_motion is not None:
-            self.abort_motion()
+        # if self.current_motion is not None:
+        #     self.abort_motion()
         self.current_motion = CartesianWaypointMotion([CartesianWaypoint(target_pose), ], return_when_finished=False)
         self.motion_thread = self.robot.move(self.current_motion, asynchronous=True)
 

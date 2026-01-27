@@ -33,7 +33,7 @@ waypoint_motion_params:
 impedance_params:
   translational_stiffness: 500  # 400 for teleop, 600 for 3dmouse / policy
   rotational_stiffness: 60  # 60 for teleop, 200 for 3dmouse / policy
-  duration: 5.0 # Duration in seconds will be converted to milliseconds in code !! Needs to be controlled 
+  #duration: 5.0 # Duration in seconds will be converted to milliseconds in code
   damping_xi: [1, 1, 1, 0.5, 0.5, 0.5]
   joint_stiffness: 200
   # nullspace control for impedance mode
