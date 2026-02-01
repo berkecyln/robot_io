@@ -319,7 +319,9 @@ class PandaFrankYInterface(BaseRobotInterface):
             target_pose,
             FrankyReferenceType.Absolute,
             self.impedance_params.translational_stiffness,
-            self.impedance_params.rotational_stiffness
+            self.impedance_params.rotational_stiffness,
+            None, # force_constraints
+            self.impedance_params.exponantial_decay
         )
 
     def _franky_async_lin_motion(self, target_pos, target_orn):
