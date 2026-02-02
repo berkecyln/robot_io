@@ -167,13 +167,14 @@ class Realsense(Camera):
     def get_dist_coeffs(self):
         return np.zeros(12)
 
-
-def test_cam():
+@hydra.main(config_path="../../conf/cams", config_name="camera_manager.yaml")
+def test_cam(cam_cfg):
     # Import OpenCV for easy image rendering
     import cv2
-    cam_cfg = OmegaConf.load("/export/home/lagandua/robot_io_dev/robot_io/conf/cams/gripper_cam/framos_highres.yaml")
+    # cam_cfg = OmegaConf.load("/export/home/lagandua/robot_io_dev/robot_io/conf/cams/gripper_cam/framos_highres.yaml")
     # cam_cfg = OmegaConf.load("../../conf/cams/gripper_cam/realsense_d435.yaml")
-    cam = hydra.utils.instantiate(cam_cfg)
+    
+    cam = hydra.utils.instantiate(cam_cfg.gripper_cam)
 
     rgb, depth = cam.get_image()
     print(cam.get_intrinsics())

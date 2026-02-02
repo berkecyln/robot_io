@@ -3,4 +3,4 @@ _recursive_: false
 robot: ???
 button_hold_threshold: 60
 workspace_limits: ${robot.workspace_limits}
-tracking_error_threshold: 0.05
+tracking_error_threshold: 0.10

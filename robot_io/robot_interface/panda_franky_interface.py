@@ -89,6 +89,8 @@ class PandaFrankYInterface(BaseRobotInterface):
 
         self.motion_thread = None
         self.current_motion = None
+        self.last_motion_time = 0.0
+        self.min_motion_interval = 0.15
 
         self.gripper = Gripper(fci_ip)
         self.gripper_params = gripper_params
@@ -154,7 +156,7 @@ class PandaFrankYInterface(BaseRobotInterface):
         self.reference_type = FrankyReferenceType.Absolute
         # if self.use_impedance:
         #     log.warning("Impedance motion for cartesian LIN is currently not implemented. Not using impedance.")
-        #self.abort_motion()
+        self.abort_motion()
         target_pose = to_affine(target_pos, target_orn) * NE_T_EE
         self.current_motion = CartesianMotion(target_pose, self.reference_type, self.robot.relative_dynamics_factor)
         self.robot.move(self.current_motion)
@@ -196,8 +198,6 @@ class PandaFrankYInterface(BaseRobotInterface):
     def move_async_joint_pos(self, joint_positions):
         # franky doesn't have set_next_target()
         # create new motion and call move with asynchronous=True
-        if self.current_motion is not None:
-            self.abort_motion()
         self.current_motion = JointWaypointMotion([joint_positions], return_when_finished=False)
         self.motion_thread = self.robot.move(self.current_motion, asynchronous=True)
 
@@ -290,13 +290,18 @@ class PandaFrankYInterface(BaseRobotInterface):
             target_pos: (x,y,z)
             target_orn: quaternion (x,y,z,w) | euler_angles (α,β,γ)
         """
+        # Rate limit motion commands
+        current_time = time.time()
+        time_since_last_motion = current_time - self.last_motion_time
+        
+        # Only send new motion command if enough time has passed or robot not in control
+        if time_since_last_motion < self.min_motion_interval and self.robot.is_in_control:
+            return
+        
         target_pose = to_affine(target_pos, target_orn) * NE_T_EE
-        # franky doesn't have set_target()
-        # create new motion and call move with asynchronous=True
-        # if self.current_motion is not None:
-        #     self.abort_motion()
         self.current_motion = self._new_impedance_motion(target_pose)
         self.robot.move(self.current_motion, asynchronous=True)
+        self.last_motion_time = current_time
 
     def _new_impedance_motion(self, target_pose):
         """
@@ -308,13 +313,6 @@ class PandaFrankYInterface(BaseRobotInterface):
         Returns:
             Impedance motion object.
         """
-        # duration = Duration(int(self.impedance_params.duration * 1000)) # Convert seconds to milliseconds
-        # return CartesianImpedanceMotion(
-        #     target_pose,
-        #     duration,
-        #     translational_stiffness=self.impedance_params.translational_stiffness,
-        #     rotational_stiffness=self.impedance_params.rotational_stiffness
-        # )
         return ExponentialImpedanceMotion(
             target_pose,
             FrankyReferenceType.Absolute,
@@ -332,13 +330,18 @@ class PandaFrankYInterface(BaseRobotInterface):
             target_pos: (x,y,z)
             target_orn: quaternion (x,y,z,w) | euler_angles (α,β,γ)
         """
+        # Rate limit motion commands
+        current_time = time.time()
+        time_since_last_motion = current_time - self.last_motion_time
+        
+        # Only send new motion command if enough time has passed or robot not in control
+        if time_since_last_motion < self.min_motion_interval and self.robot.is_in_control:
+            return
+        
         target_pose = to_affine(target_pos, target_orn) * NE_T_EE
-        # franky doesn't have set_next_waypoint()
-        # create new motion and call move with asynchronous=True
-        # if self.current_motion is not None:
-        #     self.abort_motion()
         self.current_motion = CartesianWaypointMotion([CartesianWaypoint(target_pose), ], return_when_finished=False)
         self.motion_thread = self.robot.move(self.current_motion, asynchronous=True)
+        self.last_motion_time = current_time
 
     def _inverse_kinematics(self, target_pos, target_orn):
         """

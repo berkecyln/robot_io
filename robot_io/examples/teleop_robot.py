@@ -1,7 +1,7 @@
 import hydra
 
 
-@hydra.main(config_path="../conf")
+@hydra.main(config_path="../conf", config_name="panda_teleop")
 def main(cfg):
     """
     Teleoperate the robot with different input devices.
