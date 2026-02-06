@@ -313,14 +313,16 @@ class PandaFrankYInterface(BaseRobotInterface):
         Returns:
             Impedance motion object.
         """
-        return ExponentialImpedanceMotion(
-            target_pose,
-            FrankyReferenceType.Absolute,
-            self.impedance_params.translational_stiffness,
-            self.impedance_params.rotational_stiffness,
-            None, # force_constraints
-            self.impedance_params.exponantial_decay
-        )
+        # return ExponentialImpedanceMotion(
+        #     target_pose,
+        #     FrankyReferenceType.Absolute,
+        #     self.impedance_params.translational_stiffness,
+        #     self.impedance_params.rotational_stiffness,
+        #     None, # force_constraints
+        #     self.impedance_params.exponantial_decay
+        # )
+        return CartesianMotion(target_pose, FrankyReferenceType.Absolute, self.robot.relative_dynamics_factor)
+
 
     def _franky_async_lin_motion(self, target_pos, target_orn):
         """

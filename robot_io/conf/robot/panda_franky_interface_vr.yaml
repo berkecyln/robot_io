@@ -23,7 +23,7 @@ libfranka_params:
 franky_params:
   velocity_rel: 0.3
   acceleration_rel: 0.3
-  jerk_rel: 0.2
+  jerk_rel: 0.1
 
 waypoint_motion_params:
   relative_dynamics_factor: 0.1 # Speed factor for CartesianWaypointMotion (0.0-1.0)
