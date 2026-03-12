@@ -165,6 +165,9 @@ class Realsense(Camera):
         return cam_mat
 
     def get_dist_coeffs(self):
+        # color_profile = rs.video_stream_profile(self.profile.get_stream(rs.stream.color))
+        # intr = color_profile.get_intrinsics()
+        # return np.array(intr.coeffs)
         return np.zeros(12)
 
 @hydra.main(config_path="../../conf/cams", config_name="camera_manager.yaml")
