@@ -21,3 +21,5 @@ params:
   enable_auto_exposure: 0.0
   enable_auto_white_balance: 0.0
 flipped_cam: true # changing this need recalibration
+depth_filters: true  # temporal + spatial + hole-fill filters
+save_ir: false       # save IR stereo pair to images_ir_left/ and images_ir_right/
