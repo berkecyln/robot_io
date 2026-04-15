@@ -1,0 +1,17 @@
+defaults:
+  - robot: panda_franky_interface_policy
+  - input: gello
+  - _self_
+
+hydra:
+  run:
+    dir: .
+
+freq: 60  # teleop loop rate in Hz
+
+# Overrides the one in panda_franky_interface_policy.yaml 
+robot:
+  franky_params:
+    velocity_rel: 0.3
+    acceleration_rel: 0.3
+    jerk_rel: 0.3

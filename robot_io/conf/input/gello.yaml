@@ -1,0 +1,11 @@
+_target_: robot_io.input_devices.gello_input.GelloInput
+_recursive_: false
+
+port: /dev/serial/by-id/usb-FTDI_USB__-__Serial_Converter_FTAO4UAS-if00-port0
+# Check connected device: ls /dev/serial/by-id/
+# Fix permissions if needed: sudo chmod 666 /dev/ttyUSB0
+
+gripper_close_threshold: 0.5
+# Gripper value in [0,1] above which gripper closes.
+# 0 = fully open, 1 = fully closed (GelloAgent normalizes this automatically).
+# To tune: add a print(gripper_raw) in get_action() and squeeze/release GELLO gripper.

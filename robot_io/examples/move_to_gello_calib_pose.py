@@ -5,7 +5,7 @@ import numpy as np
 # GELLO calibration pose for Franka Panda.
 # Move the robot to this configuration, then physically match your GELLO arm
 # to the same pose before running gello_get_offset.py to compute the joint offsets.
-GELLO_CALIB_JOINTS = np.array([0.0, 0.0, 0.0, -1.5708, 0.0, 1.5708, 0.0])
+GELLO_CALIB_JOINTS = np.array([0.0, 0.0, 0.0, -1.5708, 0.0, 1.5708, 0.7854])
 
 
 @hydra.main(config_path="../conf", config_name="panda_teleop")

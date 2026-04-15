@@ -8,10 +8,10 @@ from robot_io.control.rel_action_control import RelActionControl
 from robot_io.robot_interface.base_robot_interface import BaseRobotInterface
 from franky import (
     Robot, Gripper, Affine, RelativeDynamicsFactor, Duration,
-    JointMotion, JointWaypointMotion,
+    JointMotion, JointWaypointMotion, JointWaypoint, JointState,
     CartesianMotion, CartesianWaypointMotion, CartesianWaypoint,
     CartesianImpedanceMotion, ExponentialImpedanceMotion,
-    NetworkException, ReferenceType as FrankyReferenceType
+    NetworkException, CommandException, ReferenceType as FrankyReferenceType
 )
 
 from robot_io.utils.franky_utils import to_affine
@@ -94,6 +94,7 @@ class PandaFrankYInterface(BaseRobotInterface):
 
         self.gripper = Gripper(fci_ip)
         self.gripper_params = gripper_params
+        self.gripper.homing()
         self.open_gripper(blocking=True)
 
         # F_T_NE is the transformation from nominal end-effector (NE) frame to flange (F) frame.
@@ -138,6 +139,15 @@ class PandaFrankYInterface(BaseRobotInterface):
         q_desired = self._inverse_kinematics(target_pos, target_orn)
         self.abort_motion()
         self.robot.move(JointMotion(q_desired))
+
+    def move_cart_pos_rel_lin(self, rel_target_pos, rel_target_orn):
+        target_pos, target_orn = self.rel_action_converter.to_absolute(rel_target_pos, rel_target_orn, self.get_state(), self.reference_type)
+        self.reference_type = ReferenceType.RELATIVE
+        self.abort_motion()
+        target_pose = to_affine(target_pos, target_orn) * NE_T_EE
+        self.current_motion = CartesianMotion(target_pose, FrankyReferenceType.Absolute, self.robot.relative_dynamics_factor)
+        self.robot.move(self.current_motion)
+        self.current_motion = None
 
     def move_async_cart_pos_rel_lin(self, rel_target_pos, rel_target_orn):
         target_pos, target_orn = self.rel_action_converter.to_absolute(rel_target_pos, rel_target_orn, self.get_state(), self.reference_type)
@@ -196,9 +206,7 @@ class PandaFrankYInterface(BaseRobotInterface):
             self._franky_async_lin_motion(target_pos, target_orn)
 
     def move_async_joint_pos(self, joint_positions):
-        # franky doesn't have set_next_target()
-        # create new motion and call move with asynchronous=True
-        self.current_motion = JointWaypointMotion([joint_positions], return_when_finished=False)
+        self.current_motion = JointWaypointMotion([JointWaypoint(JointState(joint_positions))], self.robot.relative_dynamics_factor, return_when_finished=False)
         self.motion_thread = self.robot.move(self.current_motion, asynchronous=True)
 
     def move_joint_pos(self, joint_positions):
@@ -211,11 +219,12 @@ class PandaFrankYInterface(BaseRobotInterface):
 
     def abort_motion(self):
         if self.current_motion is not None:
-            self.robot.stop()
+            try:
+                self.robot.stop()
+            except (CommandException, NetworkException):
+                pass  # reflex or network issue during stop
             self.current_motion = None
         if self.motion_thread is not None:
-        #     # self.motion_thread.stop()
-            # no join needed for franky's async move   
             self.motion_thread = None
         while 1:
             try:

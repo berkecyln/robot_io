@@ -148,6 +148,12 @@ python robot_io/input_devices/space_mouse.py
 ```
 
 
+## GELLO
+
+Low-cost leader arm teleoperation for Franka Panda using Dynamixel servos.
+
+See [GELLO Setup](gello_setup.md) for full setup and usage instructions.
+
 ## VR Teleoperation
 
 ### Install Steam and SteamVR
