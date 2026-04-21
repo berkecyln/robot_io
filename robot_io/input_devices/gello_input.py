@@ -21,6 +21,9 @@ class GelloInput:
                       at initialization time. Used for 2*pi disambiguation.
         gripper_close_threshold: Gripper value in [0,1] above which gripper
                                  is considered closed. 0=open, 1=closed.
+        gripper_hysteresis: Dead band around the threshold. Gripper state only
+                            changes when the value moves outside [threshold ±
+                            hysteresis]. Prevents rapid toggling near the boundary.
     """
 
     def __init__(
@@ -28,8 +31,11 @@ class GelloInput:
         port=FRANKA_PORT,
         start_joints=None,
         gripper_close_threshold=0.5,
+        gripper_hysteresis=0.1,
     ):
         self.gripper_close_threshold = gripper_close_threshold
+        self.gripper_hysteresis = gripper_hysteresis
+        self._gripper_state = GRIPPER_OPEN
         self._agent = GelloAgent(port=port, start_joints=np.array(start_joints) if start_joints is not None else None)
 
     def get_action(self):
@@ -38,16 +44,22 @@ class GelloInput:
 
         Returns:
             action: dict with keys:
-                "motion"  — np.ndarray (7,) calibrated arm joint positions in radians
-                "gripper" — GRIPPER_OPEN (1) or GRIPPER_CLOSE (-1)
-                "ref"     — "joint"
+                "motion"  - np.ndarray (7,) calibrated arm joint positions in radians
+                "gripper" - GRIPPER_OPEN (1) or GRIPPER_CLOSE (-1)
+                "ref"     - "joint"
             record_info: empty dict (recording is keyboard-controlled in teleop script)
         """
         joints = self._agent.act({})          # shape (8,): arm[0:7] + gripper[7] in [0,1]
         arm_joints = joints[:7]
         gripper_raw = joints[7]
 
-        gripper = GRIPPER_CLOSE if gripper_raw > self.gripper_close_threshold else GRIPPER_OPEN
+        # Hysteresis: only switch state when crossing threshold ± hysteresis band.
+        # Prevents the gripper from toggling when the raw value oscillates near the threshold.
+        if self._gripper_state == GRIPPER_OPEN and gripper_raw > self.gripper_close_threshold + self.gripper_hysteresis:
+            self._gripper_state = GRIPPER_CLOSE
+        elif self._gripper_state == GRIPPER_CLOSE and gripper_raw < self.gripper_close_threshold - self.gripper_hysteresis:
+            self._gripper_state = GRIPPER_OPEN
+        gripper = self._gripper_state
 
         action = {"motion": arm_joints, "gripper": gripper, "ref": "joint"}
         return action, {}

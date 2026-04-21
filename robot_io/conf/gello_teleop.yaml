@@ -1,6 +1,7 @@
 defaults:
   - robot: panda_franky_interface_policy
   - input: gello
+  - cams: camera_manager
   - _self_
 
 hydra:

@@ -9,3 +9,8 @@ gripper_close_threshold: 0.5
 # Gripper value in [0,1] above which gripper closes.
 # 0 = fully open, 1 = fully closed (GelloAgent normalizes this automatically).
 # To tune: add a print(gripper_raw) in get_action() and squeeze/release GELLO gripper.
+
+gripper_hysteresis: 0.1
+# Dead band around the threshold. Gripper state only changes when the raw value
+# moves outside [threshold ± hysteresis]. Prevents toggling near the boundary.
+# Close triggers at threshold+hysteresis (0.6), open triggers at threshold-hysteresis (0.4).

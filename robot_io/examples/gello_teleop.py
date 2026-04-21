@@ -7,11 +7,11 @@ Usage:
     python robot_io/examples/gello_teleop.py
 
 Controls (cv2 window must be focused):
-    r  — toggle recording ON/OFF
-    q  — quit and save trajectory
+    r  - toggle recording ON/OFF
+    q  - quit and save trajectory
 
 Output:
-    trajectory_YYYYMMDD_HHMMSS.npy  — list of dicts with tcp_pos, tcp_orn,
+    trajectory_YYYYMMDD_HHMMSS.npy  - list of dicts with tcp_pos, tcp_orn,
                                        joint_positions, gripper, timestamp.
     Used by GelloMover for drema data gathering, and by simulation replay.
 """
@@ -35,12 +35,26 @@ from robot_io.utils.utils import FpsController
 @hydra.main(config_path="../conf", config_name="gello_teleop", version_base=None)
 def main(cfg):
     robot = hydra.utils.instantiate(cfg.robot)
+    cam_manager = hydra.utils.instantiate(cfg.cams)
 
     print("Moving to neutral pose...")
     robot.move_to_neutral()
     robot.open_gripper(blocking=True)
-    print("Done. Physically match GELLO arm to robot pose, then press Enter.")
-    input()
+    print("Done. Physically match GELLO arm to robot pose, then press Enter or Space in the camera window.")
+
+    # Show live camera feed
+    while True:
+        img_obs = cam_manager.get_images()
+        rgb = img_obs.get("rgb_gripper")
+        if rgb is not None:
+            cv2.imshow("Gripper Cam", rgb[:, :, ::-1])
+        canvas = np.zeros((80, 420, 3), dtype=np.uint8)
+        cv2.putText(canvas, "Match GELLO to robot, press Enter to start",
+                    (10, 45), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (200, 200, 200), 1)
+        cv2.imshow("GELLO Teleop", canvas)
+        key = cv2.waitKey(1) & 0xFF
+        if key in (13, ord(' ')):  # Enter or Space
+            break
 
     # start_joints: neutral_pose (7) + gripper=0.0
     # DynamixelRobot uses this to resolve 2*pi ambiguity in servo readings.
@@ -51,6 +65,7 @@ def main(cfg):
         port=cfg.input.port,
         start_joints=start_joints,
         gripper_close_threshold=cfg.input.gripper_close_threshold,
+        gripper_hysteresis=cfg.input.gripper_hysteresis,
     )
 
     # Measure exact per-joint offset at startup and apply every frame.
@@ -102,6 +117,12 @@ def main(cfg):
                     "timestamp":       time.time(),
                 })
 
+            # --- Gripper camera live view ---
+            img_obs = cam_manager.get_images()
+            rgb = img_obs.get("rgb_gripper")
+            if rgb is not None:
+                cv2.imshow("Gripper Cam", rgb[:, :, ::-1])
+
             # --- cv2 status window + keyboard ---
             canvas = np.zeros((120, 420, 3), dtype=np.uint8)
             rec_str = "REC ON " if recording else "REC OFF"
@@ -117,7 +138,7 @@ def main(cfg):
             key = cv2.waitKey(1) & 0xFF
             if key == ord('r'):
                 recording = not recording
-                print(f"Recording {'ON' if recording else 'OFF'} — {len(trajectory)} frames so far")
+                print(f"Recording {'ON' if recording else 'OFF'} - {len(trajectory)} frames so far")
             elif key == ord('q'):
                 break
 

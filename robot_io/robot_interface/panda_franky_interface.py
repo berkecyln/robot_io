@@ -212,7 +212,7 @@ class PandaFrankYInterface(BaseRobotInterface):
     def move_joint_pos(self, joint_positions):
         self.reference_type = ReferenceType.JOINT
         self.abort_motion()
-        success = self.robot.move(JointMotion(joint_positions))
+        success = self.robot.move(JointMotion(JointState(joint_positions), relative_dynamics_factor=self.robot.relative_dynamics_factor))
         if not success:
             self.robot.recover_from_errors()
         return success

@@ -1,0 +1,35 @@
+_target_: robot_io.cams.realsense.realsense.Realsense
+_recursive_: false
+name: realsenseD415
+fps: 30
+img_type: "rgb_depth"
+
+resolution: [640, 480] 
+resize_resolution: [640, 360] 
+crop_coords: [120, 480, 0, 640]   # crop for longer finger 
+# resize_resolution: [640, 480] 
+# crop_coords: [0, 480, 0, 640]   # no crop
+
+flipped_cam: true                 # changing this need recalibration
+save_ir: true                    # save IR stereo pair to images_ir_left/ and images_ir_right/
+
+# Color sensor
+params:
+  enable_auto_exposure: 0
+  exposure: 350            
+  enable_auto_white_balance: 0
+  white_balance: 3500             # 2800=cold 4000=neutral 6500=warm
+  brightness: 0                   # -64 to 64
+  contrast: 50                    # 0-100
+  saturation: 64                  # 0-100
+  sharpness: 70                   # 0-100 higher helps feature matching
+  gain: 16                        # 0-16 
+  gamma: 220                      # 100-500 lower=more natural, higher=brighter shadows
+
+# Depth sensor
+depth_params:
+  # 3=HighAccuracy (fewer holes)
+  # 4=HighDensity  (more coverage)
+  visual_preset: 3
+  laser_power: 150
+  gain: 16
