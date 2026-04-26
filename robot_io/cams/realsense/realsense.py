@@ -240,8 +240,19 @@ class Realsense(Camera):
     def get_ir_intrinsics(self):
         ir_profile = rs.video_stream_profile(self.profile.get_stream(rs.stream.infrared, 1))
         intr = ir_profile.get_intrinsics()
-        return dict(fx=intr.fx, fy=intr.fy, cx=intr.ppx, cy=intr.ppy,
-                    width=intr.width, height=intr.height)
+        fx, fy = intr.fx, intr.fy
+        cx, cy = intr.ppx, intr.ppy
+        width, height = intr.width, intr.height
+        if self.flipped_cam:
+            cx = width - cx
+            cy = height - cy
+        if self.crop_coords is not None:
+            c = self.crop_coords
+            cx -= c[2]
+            cy -= c[0]
+            width = c[3] - c[2]
+            height = c[1] - c[0]
+        return dict(fx=fx, fy=fy, cx=cx, cy=cy, width=width, height=height)
 
     def get_stereo_baseline(self):
         ir1 = rs.video_stream_profile(self.profile.get_stream(rs.stream.infrared, 1))
