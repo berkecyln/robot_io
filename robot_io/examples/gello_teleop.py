@@ -8,16 +8,24 @@ Usage:
 
 Controls (cv2 window must be focused):
     r  - toggle recording ON/OFF
+    c  - snap a calibration pose (only when calib_save_dir is set in config)
     q  - quit and save trajectory
 
 Output:
     trajectory_YYYYMMDD_HHMMSS.npy  - list of dicts with tcp_pos, tcp_orn,
                                        joint_positions, gripper, timestamp.
     Used by GelloMover for drema data gathering, and by simulation replay.
+
+Calibration pose recording:
+    Set calib_save_dir in config or via CLI override, e.g.:
+        python robot_io/examples/gello_teleop.py calib_save_dir=/abs/path/to/dir
+    Move robot so the AprilTag is visible to the static camera, press [c] to snap.
+    Aim for 20-30 diverse poses covering the camera's field of view.
 """
 
 import time
 from datetime import datetime
+from pathlib import Path
 
 import cv2
 import hydra
@@ -83,7 +91,15 @@ def main(cfg):
     prev_gripper = GRIPPER_OPEN
     fps = FpsController(freq=cfg.freq)
 
-    print("Teleop running. Focus the cv2 window: [r] record, [q] quit.")
+    calib_save_dir = None
+    calib_frame_count = 0
+    if cfg.get("calib_save_dir") and cfg.calib_save_dir is not None:
+        calib_save_dir = Path(cfg.calib_save_dir)
+        calib_save_dir.mkdir(parents=True, exist_ok=True)
+        print(f"Calibration pose saving ENABLED → {calib_save_dir}")
+        print("Move robot so AprilTag is visible to static camera, press [c] to snap a pose.")
+
+    print("Teleop running. Focus the cv2 window: [r] record, [c] calib snap, [q] quit.")
 
     try:
         while True:
@@ -124,7 +140,7 @@ def main(cfg):
                 cv2.imshow("Gripper Cam", rgb[:, :, ::-1])
 
             # --- cv2 status window + keyboard ---
-            canvas = np.zeros((120, 420, 3), dtype=np.uint8)
+            canvas = np.zeros((150, 420, 3), dtype=np.uint8)
             rec_str = "REC ON " if recording else "REC OFF"
             rec_col = (0, 0, 200) if recording else (150, 150, 150)
             grp_str = "GRIP: CLOSE" if gripper == GRIPPER_CLOSE else "GRIP: OPEN "
@@ -133,12 +149,21 @@ def main(cfg):
             cv2.putText(canvas, grp_str, (220, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.7, grp_col, 2)
             cv2.putText(canvas, f"Frames: {len(trajectory)}", (10, 75),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200, 200, 200), 1)
+            if calib_save_dir is not None:
+                cv2.putText(canvas, f"Calib poses: {calib_frame_count}  [c]=snap", (10, 115),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 200, 100), 1)
             cv2.imshow("GELLO Teleop", canvas)
 
             key = cv2.waitKey(1) & 0xFF
             if key == ord('r'):
                 recording = not recording
                 print(f"Recording {'ON' if recording else 'OFF'} - {len(trajectory)} frames so far")
+            elif key == ord('c') and calib_save_dir is not None:
+                tcp_pose = robot.get_tcp_pose()
+                fname = calib_save_dir / f"frame_{calib_frame_count:06d}.npz"
+                np.savez(fname, tcp_pose=tcp_pose, marker_pose=np.eye(4))
+                calib_frame_count += 1
+                print(f"Calib pose {calib_frame_count} saved → {fname}")
             elif key == ord('q'):
                 break
 

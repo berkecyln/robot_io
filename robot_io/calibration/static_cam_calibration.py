@@ -4,6 +4,7 @@ from pathlib import Path
 
 import hydra
 import numpy as np
+from franky import ControlException, NetworkException
 
 from robot_io.utils.utils import matrix_to_pos_orn
 from robot_io.calibration.calibration_utils import calibrate_static_cam_least_squares, visualize_frame_in_static_cam
@@ -79,7 +80,12 @@ def detect_marker_from_trajectory(robot, tcp_poses, marker_detector, cfg):
 
     for i in range(len(tcp_poses)):
         target_pos, target_orn = matrix_to_pos_orn(tcp_poses[i])
-        robot.move_cart_pos_abs_ptp(target_pos, target_orn)
+        try:
+            robot.move_cart_pos_abs_ptp(target_pos, target_orn)
+        except (ControlException, NetworkException) as e:
+            print(f"Pose {i} skipped: {e}")
+            robot.robot.recover_from_errors()
+            continue
         time.sleep(1.0)
         marker_pose = marker_detector.estimate_pose()
         if marker_pose is not None:

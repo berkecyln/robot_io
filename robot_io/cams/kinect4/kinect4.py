@@ -53,7 +53,7 @@ class Kinect4(Camera):
             raise RuntimeError(f"Failed to connect to sensor on device {device}. Error: {e}")
 
         # Retrieve device info
-        self.serial_number = self.sensor.serial
+        self.serial_number = self.sensor.serial.lstrip('0') or self.sensor.serial
         print(f"Connected to device serial: {self.serial_number}")
         
         # Load calibration parameters (External file or Factory default)

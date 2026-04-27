@@ -10,6 +10,8 @@ hydra:
 
 freq: 60  # teleop loop rate in Hz
 
+calib_save_dir: null  # set to an absolute path to enable [c] calibration pose snapping
+
 # Overrides the one in panda_franky_interface_policy.yaml 
 robot:
   franky_params:
