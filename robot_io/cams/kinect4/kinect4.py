@@ -90,7 +90,7 @@ class Kinect4(Camera):
             conf = OmegaConf.to_container(OmegaConf.load(full_path.as_posix())[resolution])
             self.intrinsics = conf["intrinsics"]
             self.dist_coeffs = np.array(conf["dist_coeffs"])
-            if "crop_coords" in conf:
+            if conf.get("crop_coords") is not None:
                 self.crop_coords = np.array(conf["crop_coords"])
         else:
             # Fallback to factory calibration
